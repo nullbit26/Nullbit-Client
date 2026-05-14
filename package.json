@@ -1,0 +1,25 @@
+{
+  "name": "ai_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "smoke:di": "node scripts/smoke-di.js",
+    "postinstall": "node scripts/postinstall-patches.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@miner-org/mineflayer-baritone": "^4.5.1",
+    "dotenv": "^16.6.1",
+    "mineflayer": "^4.37.1",
+    "mineflayer-pathfinder": "^2.4.5",
+    "opusscript": "^0.1.1"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1"
+  }
+}

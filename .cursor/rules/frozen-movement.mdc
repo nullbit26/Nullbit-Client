@@ -1,0 +1,21 @@
+---
+description: Frozen navigation stack — do not edit movement/pathfinding without explicit ask
+alwaysApply: true
+---
+
+# Frozen movement & navigation
+
+The following are **frozen** unless the user **explicitly** asks to change them:
+
+- Movement / locomotion logic (`actions/movement.js` and related movement flow)
+- Pathfinding integration (`mineflayer-pathfinder`, `nav-movements.js`, pathfinder patches/pauses)
+- Stuck / recovery handlers and anti-stuck paths (`stuckHandler`, `handleStuckRecovery`, legacy stall paths where present)
+- Raycast / nav-assist geometry (`raycast`, `nav-assist.js`, wall peel, wall stick, nav-assist ticks wired in `events.js`)
+
+Do **not** refactor, tune, or extend this stack “while you’re at it.” Treat it as production-stable.
+
+## How to add features
+
+- **Voice, vision, commands, new behaviors** must **layer on top**: separate modules, separate hooks, optional wiring from `index.js` / `events.js` that **does not alter** frozen logic unless the user requests it.
+- New checks or policies go in **dedicated functions or files** (e.g. `features/vision.js`, `onVoiceCommand`), called from a thin adapter — **not** inlined into the main movement / `tickNavAssist` / physics chain.
+- If the user later asks for a movement change, make the **smallest** diff and keep behavior documented in the request.

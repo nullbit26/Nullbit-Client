@@ -1,0 +1,104 @@
+diff --git a/node_modules/mineflayer-pathfinder/index.js b/node_modules/mineflayer-pathfinder/index.js
+--- a/node_modules/mineflayer-pathfinder/index.js
++++ b/node_modules/mineflayer-pathfinder/index.js
+@@ -20,10 +20,13 @@ function inject (bot) {
+   let stateGoal = null
+   let astarContext = null
+   let astartTimedout = false
+   let dynamicGoal = false
+   let path = []
++  /** Прерывание monitorMovement без сброса цели — для локального восстановления (nav-assist). */
++  let pathingPausedUntilPerf = 0
+   let pathUpdated = false
+   let digging = false
+   let placing = false
+   let placingBlock = null
+@@ -154,7 +157,48 @@ function inject (bot) {
+ 
+   bot.pathfinder.isMoving = () => path.length > 0
+   bot.pathfinder.isMining = () => digging
+   bot.pathfinder.isBuilding = () => placing
+ 
++  /**
++   * Отбросить первые узлы активного маршрута (аналог shift), не сбрасывая цель.
++   * @returns {number} сколько узлов убрано
++   */
++  bot.pathfinder.skipPathSteps = (n = 1) => {
++    let steps = 1
++    if (n !== undefined && n !== null) {
++      const parsed = Number(n)
++      steps = Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 1
++    }
++    const k = Math.min(steps, path.length)
++    let removed = 0
++    while (removed < k && path.length > 0) {
++      path.shift()
++      removed++
++    }
++    if (removed > 0) lastNodeTime = performance.now()
++    return removed
++  }
++
++  /** Узел пути по индексу (0 — текущий) или null. */
++  bot.pathfinder.pathStepAt = (i = 0) => {
++    const idx = Math.max(0, Math.floor(Number(i)) || 0)
++    return path[idx] ?? null
++  }
++
++  /** Не исполнять шаги пути заданное время (мс); очистка клавиш — поведение как при паузе. */
++  bot.pathfinder.pausePathExecution = (ms) => {
++    const t = Number(ms)
++    pathingPausedUntilPerf = performance.now() + (Number.isFinite(t) ? Math.max(0, t) : 0)
++    bot.clearControlStates()
++  }
++
+   bot.pathfinder.goto = (goal) => {
+     return gotoUtil(bot, goal)
+   }
+@@ -223,7 +266,7 @@ function inject (bot) {
+     const dx = n1.x - bot.entity.position.x
+     const dy = n1.y - bot.entity.position.y
+     const dz = n1.z - bot.entity.position.z
+-    const reached = Math.abs(dx) <= 0.35 && Math.abs(dz) <= 0.35 && Math.abs(dy) < 1
++    const reached = Math.hypot(dx, dz) <= 0.7 && Math.abs(dy) < 1
+     if (minI + 1 < path.length && n1.toBreak.length === 0 && n1.toPlace.length === 0) {
+       const n2 = path[minI + 1]
+       const d2 = bot.entity.position.distanceSquared(n2)
+@@ -426,9 +469,12 @@ function inject (bot) {
+         if (target.position.distanceSquared(bot.entity.position) > stateGoal.rangeSq) {
+           bot.setControlState('forward', true)
+         } else {
+           bot.clearControlStates()
+         }
+         return
+       }
+     }
++    if (performance.now() < pathingPausedUntilPerf) return
+     if (stateGoal) {
+       if (!stateGoal.isValid()) {
+         stop()
+@@ -576,7 +622,7 @@ function inject (bot) {
+     let dx = nextPoint.x - p.x
+     const dy = nextPoint.y - p.y
+     let dz = nextPoint.z - p.z
+-    if (Math.abs(dx) <= 0.35 && Math.abs(dz) <= 0.35 && Math.abs(dy) < 1) {
++    if (Math.hypot(dx, dz) <= 0.7 && Math.abs(dy) < 1) {
+       // arrived at next point
+       lastNodeTime = performance.now()
+       if (stopPathing) {
+@@ -608,14 +654,14 @@ function inject (bot) {
+     if (bot.entity.isInWater) {
+       bot.setControlState('jump', true)
+       bot.setControlState('sprint', false)
+-    } else if (stateMovements.allowSprinting && physics.canStraightLine(path, true)) {
+-      bot.setControlState('jump', false)
+-      bot.setControlState('sprint', true)
+     } else if (stateMovements.allowSprinting && physics.canSprintJump(path)) {
+       bot.setControlState('jump', true)
+       bot.setControlState('sprint', true)
++    } else if (stateMovements.allowSprinting && physics.canStraightLine(path, true)) {
++      bot.setControlState('jump', false)
++      bot.setControlState('sprint', true)
+     } else if (physics.canStraightLine(path)) {
+       bot.setControlState('jump', false)
+       bot.setControlState('sprint', false)
