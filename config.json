@@ -1,0 +1,20 @@
+{
+  "license_key": "YOUR_LICENSE_KEY_HERE",
+  "bot_version": "1.0.0",
+  "minecraft": {
+    "username": "YOUR_MINECRAFT_LOGIN",
+    "password": "YOUR_MINECRAFT_PASSWORD",
+    "host": "mc.server.com",
+    "port": 25565,
+    "version": "1.20.1"
+  },
+  "bot": {
+    "name": "AI_Bot",
+    "language": "ru"
+  },
+  "features": {
+    "pvp": true,
+    "voice": true,
+    "autoReconnect": true
+  }
+}
