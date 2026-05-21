@@ -1,20 +1,16 @@
 {
-  "license_key": "YOUR_LICENSE_KEY_HERE",
+  "license_key": "KEYAUTH-Lg6Y9G-eFJrK5-0S5byf-E32KAB-vgt0bk-f7A458",
   "bot_version": "1.0.0",
   "minecraft": {
-    "username": "YOUR_MINECRAFT_LOGIN",
-    "password": "YOUR_MINECRAFT_PASSWORD",
-    "host": "mc.server.com",
+    "host": "127.0.0.1",
     "port": 25565,
-    "version": "1.20.1"
+    "version": "1.21.11",
+    "auth": "offline",
+    "username": "Nullbit",
+    "password": ""
   },
   "bot": {
-    "name": "AI_Bot",
-    "language": "ru"
-  },
-  "features": {
-    "pvp": true,
-    "voice": true,
-    "autoReconnect": true
+    "allowed_user": "BIG_KOSHAK13",
+    "server_password": ""
   }
 }
