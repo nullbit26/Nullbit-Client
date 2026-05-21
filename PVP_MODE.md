@@ -167,10 +167,11 @@ pvpTradeHpThreshold: 4        // Порог для TRADE состояния
 
 ## TODO / Future Improvements
 
-- [ ] Дальний бой (луки, арбалеты, трезубцы)
+- [x] **Дальний бой (луки, арбалеты)** — реализован в `CombatSession` (`combat/session/rangedPolicy.js`, `combat/executors/rangedExecutor.js`, `combat/policies/rangedCombatPolicy.js`). **В `PvPMode` не интегрирован** — `PvPMode` работает только в ближнем бою через `_microCombat()`.
+- [ ] Трезубцы (riptide/loyalty) — не реализованы
 - [ ] Умный выбор цели при нескольких противниках
 - [ ] Интеграция с ender pearls для escape
-- [ ] Totem of Undying автоматическая экипировка в off-hand
+- [x] Totem of Undying автоматическая экипировка в off-hand — `equipTotemOrShield()` в `features/combatEquipment.js`; вызывается каждые 500мс в PvP-тике `CombatSession`; HP ≤ 10 → тотем, HP > 10 → щит
 - [ ] Стратегия "circle strafing" для уклонения
 
 ## Связанные системы
