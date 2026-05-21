@@ -5,19 +5,24 @@ Autonomous Minecraft bot with AI-driven decision making for resource gathering, 
 ## Features
 
 ### Core Capabilities
-- **Resource Gathering**: Automated tree chopping and ore mining with tunnel navigation
-- **Combat System**: Threat evaluation, fight/flee decisions, weapon selection
+- **Resource Gathering**: Automated tree chopping, ore mining, branch mining, cave exploration
+- **Combat System v2.0**: CombatSession FSM — ranged/melee, critical hits, totem support, shield management
+- **PvP Mode**: Auto-equip, smart healing priorities, shield management, voice chat phrases
 - **Survival Mode**: Self-preservation during gather with auto-healing
 - **Voice Commands**: Natural language control (Russian/English)
 - **Follow/Guard**: Escort and protect player
 
-### Recent Enhancements
-- **Flee Logic Overhaul**: Fixed eternal BREAK_CONTACT, reduced timeouts, proper threat distance calculation
+### Recent Enhancements (2026-05)
+- **TacticalDecisionEngine**: Single per-tick decision context shared across all systems
+- **BranchMineJob**: Branch mining at optimal Y-levels with FSM, integrated into ResourceSystem
+- **InventoryManager**: Auto-drop junk during expeditions, configurable whitelist
+- **CavePersistence**: Saves visited caves state across bot restarts (TTL 25 min)
+- **GlobalWatchdog**: Global deadlock detector — resets bot after 30–90s of no movement
+- **CombatSession v2.0**: Full FSM rewrite — ranged volley, crit attack, totem auto-equip, strafing
+- **PvP Mode overhaul**: Auto-equip best gear, improved heal priorities, smart shield handling
+- **Flee Logic Overhaul**: Fixed eternal BREAK_CONTACT, live threat distances, tuned thresholds
+- **HomeBaseSystem**: Fixed infinite partial-loop navigation, multi-chest support
 - **Army Bot System**: 20-bot squad with combat, formations, gear distribution
-- **SURVIVAL MODE** for Gather: Simple rules (≥3 threats = flee, HP<8 = flee) eliminate decision paralysis
-- **Auto-Heal**: Recovery hold automatically eats food and waits for HP regeneration
-- **Improved Mining**: Side ore detection every 3 steps, pillar up with pathfinder management
-- **Enhanced Commands**: Multiple Russian verbs for gather operations
 
 ## Quick Start
 
@@ -80,11 +85,17 @@ npm start
 
 ### Core Systems
 - **BotBrain**: Central orchestration with state machine (IDLE, FOLLOWING, COMBAT, FLEE)
-- **ResourceSystem**: TreeJob (wood), OreJob (mining), CaveExplorerJob (cave exploration)
-- **CombatSystem**: Threat evaluation, engagement, flee navigation
+- **TacticalDecisionEngine**: Per-tick unified decision context (`threatScore`, `survivalScore`, `resourceScore`)
+- **ResourceSystem**: TreeJob, OreJob, BranchMineJob, CaveExplorerJob — orchestrated gathering
+- **CombatSystem**: Threat evaluation, engagement, flee navigation with tuned timeouts
+- **CombatSession v2.0**: FSM-based fight loop — ranged volley, crit melee, totem, strafing, shield
+- **PvPMode**: PvP-specific logic — auto-equip, smart heal, shield management
 - **GatherGuardSystem**: Combat/gather coordination with SURVIVAL MODE
-- **RecoveryHoldSystem**: Post-danger recovery with auto-heal
+- **RecoveryHoldSystem**: Post-danger recovery with auto-heal and jitter-escape
+- **GlobalWatchdog**: Deadlock detection — emits `WATCHDOG_DEADLOCK`, triggers jitter-escape
 - **AwarenessSystem**: Threat detection and tracking
+- **InventoryManager**: Junk auto-drop during expeditions
+- **CavePersistence**: Persists visited cave state across restarts
 
 ### Army Bot System (`sex_army_test.js`)
 - **20 soldier bots** (`Beer_1`–`Beer_20`) spawned with staggered 1.5s delay
@@ -112,7 +123,10 @@ AwarenessSystem ──THREAT_DETECTED──► GatherGuardSystem
 ## Documentation
 
 - [CHANGELOG.md](CHANGELOG.md) — Full change history
+- [docs/INDEX.md](docs/INDEX.md) — Documentation index & reading order
 - [docs/SYSTEMS_OVERVIEW.md](docs/SYSTEMS_OVERVIEW.md) — Architecture deep dive
+- [docs/COMBAT_SESSION_REFACTOR_PLAN.md](docs/COMBAT_SESSION_REFACTOR_PLAN.md) — CombatSession v2.0 (COMPLETE)
+- [docs/PVP_MODE.md](docs/PVP_MODE.md) — PvP mode design
 - [docs/SURVIVAL_MODE.md](docs/SURVIVAL_MODE.md) — Survival mode for gather
 - [docs/RECOVERY_HOLD.md](docs/RECOVERY_HOLD.md) — Auto-heal system
 - [docs/OREJOB_TUNNEL.md](docs/OREJOB_TUNNEL.md) — Mining and pillar up
@@ -135,9 +149,12 @@ Key settings in `config/`:
 
 ```bash
 # Run all unit tests
-node scripts/unit-phase1.js        # Core systems: 24/24 OK
-node scripts/unit-resource.js        # Resource gathering: 17/17 OK
-node scripts/unit-gather-guard.js  # Combat/gather: 6/6 OK
+node scripts/unit-phase1.js             # Core systems: 24/24 OK
+node scripts/unit-resource.js           # Resource gathering: 17/17 OK
+node scripts/unit-gather-guard.js       # Combat/gather: 6/6 OK
+node scripts/unit-phase3.js             # TacticalDecisionEngine: 15/15 OK
+node scripts/unit-inventory-manager.js  # InventoryManager: 20/20 OK
+node scripts/unit-cave-persistence.js   # CavePersistence: 15/15 OK
 ```
 
 ## Safety Features
@@ -163,35 +180,23 @@ Private project — not for public distribution.
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
 
-### 2026-05-20: Flee Logic Overhaul
-1. **Eternal BREAK_CONTACT fix** - Use live entity positions instead of stale memory.distance
-2. **Pathfinder timeouts** - Increased thinkTimeout to 4000ms during flee (was 1500ms)
-3. **Flee distance optimization** - Reduced navBoost to 10 blocks (was 20)
-4. **Threshold adjustments** - retreatScoreThreshold: 2.5, retreatRiskHpRatioMax: 0.72
-5. **Player threat inclusion** - Flee direction now considers hostile players
-6. **Logging accuracy** - Fixed nearest:0 display when no threats exist
+### 2026-05-21: BranchMineJob, InventoryManager, CavePersistence, TacticalDecisionEngine
+1. **BranchMineJob** — branch mining at optimal Y-levels (`diamond:-58`, `iron:16`, etc.) with FSM
+2. **InventoryManager** — auto-drops junk (cobblestone, dirt, gravel etc.) during expeditions; configurable whitelist
+3. **CavePersistence** — saves visited caves across restarts with 25-min TTL
+4. **TacticalDecisionEngine** — single per-tick context (`threatScore`, `survivalScore`, `resourceScore`); 15/15 tests
 
-### 2026-05-19 #2: Drop Collection & HomeBaseSystem Fixes
-1. **`_tunnelToPos` direction bug** — bot walked AWAY from drops (`sin(-yaw)` → `sin(yaw)`) — ~40% ore loss eliminated
-2. **`_collectDrops` entity-based** — scans real item entities via `bot.entities`, bruteforce to exact drop position, no pathfinder
-3. **HomeBaseSystem nav loop** — subscribed to `GATHER_START` event, aborts nav poll within 500ms when gather resumes
+### 2026-05-20: CombatSession v2.0, PvP Overhaul, Flee Fix
+1. **CombatSession v2.0** — full FSM rewrite: ranged volley, crit melee, totem auto-equip, strafing, shield — COMPLETE
+2. **PvP Mode overhaul** — auto-equip best gear/armor, heal priority system, smart shield (no interrupt during eat)
+3. **Flee Logic** — live threat distances, thinkTimeout 4000ms, navBoost 10 blocks, retreatScore 2.5
+4. **GlobalWatchdog** — deadlock detector: 30s COMBAT/FLEE, 90s GATHER → jitter-escape + IDLE
+5. **HomeBaseSystem** — fixed infinite partial-loop: 30s no progress → force canDig+canSwim, 90s → abort
 
-### 2026-05-19: Navigation & Mining Loop Fixes
-1. **`paused_for_home` infinite loop** — `ResourceSystem` now calls `executeRoundTrip()` and waits instead of spinning 60+/sec
-2. **`_tunnelToPos` stuck** — stuck detection + proper vertical descent + 350ms forward time
-3. **HomeBaseSystem** — round-trip navigation (home → deposit → craft → back) confirmed stable
-
-### 2026-05-17: Army Bot System
-1. **20-bot squad** with mineflayer-pvp combat
-2. **guard/attack/escort** — fully working mob combat
-3. **Formations** — line, column, circle, square with commander facing
-4. **Auto gear distribution** — HomeBot (op) gives gear on startup
-5. **One-click start** — `start_army.bat` handles everything
-
-### 2026-05-16: Mining & Survival
-1. **SURVIVAL MODE**: Simple flee thresholds for gather operations
-2. **Auto-Heal**: Recovery hold eats food and waits for HP
-3. **Pillar Up Fix**: Pathfinder management prevents drift
-4. **Side Ore Mining**: Tunnel wall scanning every 3 steps
-5. **Command Expansion**: Russian verb synonyms for gather
+### 2026-05-19: Mining, Storage, Navigation
+1. **Vertical shaft digging** — fast 1×2 column for `targetY < 0` with lava/void safety
+2. **Broken pickaxe recovery** — craft stone pickaxe underground, fallback to axe/shovel
+3. **Multi-chest support** — `depositAll`, `withdrawItem`, `restockForExpedition` across all chests
+4. **Torch placement** — every 8 tunnel steps, auto-craft if needed
+5. **Drop collection fix** — `sin(-yaw)` → `sin(yaw)`, entity-based collection
 
