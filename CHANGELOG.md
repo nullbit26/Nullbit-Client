@@ -61,23 +61,23 @@ All notable changes to the AI Bot project.
 
 ## [2026-05-21 #5] - Compatibility fixes: BranchMineJob integration & ResourceSystem cleanup
 
-### `systems/BranchMineJob.js` — исправления интеграции
-- **Исправлен `_branchOrigin.y`**: было `this._targetY + 1` (hardcoded) → теперь `Math.floor(this._startPos.y)` — бот уже на правильной глубине после `_digShaftDown`, не нужно навигировать через породу
-- **Исправлен `_stateNextBranch` return Y**: та же замена — `this._targetY + 1` → `Math.floor(refPos.y)` для корректного возврата к стартовой точке
+### `systems/BranchMineJob.js` — integration fixes
+- **Fixed `_branchOrigin.y`**: was `this._targetY + 1` (hardcoded) → now `Math.floor(this._startPos.y)` — bot is already at the correct depth after `_digShaftDown`, no need to navigate through rock
+- **Fixed `_stateNextBranch` return Y**: same change — `this._targetY + 1` → `Math.floor(refPos.y)` for correct return to start point
 
-### `systems/ResourceSystem.js` — исправления интеграции BranchMineJob
-- **Исправлен порядок fallback-цепочки**: было `CaveExplorer fail → BranchMine → ShaftDig`, стало `CaveExplorer fail → ShaftDig → BranchMine` — бот должен сначала спуститься на нужный Y через шахту, и только потом начинать ветвистое копание на этой глубине
-- **Убраны дублирующие `require` внутри методов**: `equipBestPickaxe`, `Vec3`, `findBestAxe`, `findBestShovel` подключались повторно внутри тел `_digShaftDown`, `_digShaftDownVertical`, `_climbToSurface` — перенесены на top-level
-- **Убран дублирующий top-level import**: два отдельных `require('../utils/equipBestTool')` на строках 6 и 15 объединены в один с полным набором деструктурированных экспортов: `{ equipBestAxe, equipBestPickaxe, findBestAxe, findBestShovel }`
+### `systems/ResourceSystem.js` — BranchMineJob integration fixes
+- **Fixed fallback chain order**: was `CaveExplorer fail → BranchMine → ShaftDig`, now `CaveExplorer fail → ShaftDig → BranchMine` — bot must first descend to target Y via shaft, then start branch mining
+- **Removed duplicate `require` inside methods**: `equipBestPickaxe`, `Vec3`, `findBestAxe`, `findBestShovel` moved to top-level
+- **Removed duplicate top-level import**: two `require('../utils/equipBestTool')` merged into one with full destructured exports
 
-### Совместимость — проверено
-- `NavEvents.GOTO kind:'near'` — поддерживается `NavigationController` ✅
-- `TacticalDecisionEngine.init()` — защищён `if (_wired) return`, двойной вызов безопасен ✅
-- `BotBrain.init()` — защищён `if (_initialized) return` ✅
-- `SurvivalSystem` — `if (!ctx) return` при `brain.decisionContext === null` ✅
-- Все экспорты (`ITEM_VALUES`, `equipBestPickaxe`, `findBestAxe`, `findBestShovel`) подтверждены ✅
+### Compatibility — verified
+- `NavEvents.GOTO kind:'near'` — supported by `NavigationController` ✅
+- `TacticalDecisionEngine.init()` — guarded by `if (_wired) return` ✅
+- `BotBrain.init()` — guarded by `if (_initialized) return` ✅
+- `SurvivalSystem` — `if (!ctx) return` when `brain.decisionContext === null` ✅
+- All exports confirmed ✅
 
-### Тесты после фиксов — **70/70 ✅**
+### Tests after fixes — **70/70 ✅**
 - `unit-phase3.js` — 15/15
 - `unit-cave-persistence.js` — 15/15
 - `unit-inventory-manager.js` — 20/20
@@ -85,101 +85,101 @@ All notable changes to the AI Bot project.
 
 ---
 
-## [2026-05-21 #4] - BranchMineJob: ветвистая добыча на оптимальных Y-уровнях
+## [2026-05-21 #4] - BranchMineJob: branch mining at optimal Y-levels
 
-### `systems/BranchMineJob.js` — новый модуль
-- Детерминированная ветвистая добыча на оптимальных Y-уровнях (1.18+)
+### `systems/BranchMineJob.js` — new module
+- Deterministic branch mining at optimal Y-levels (1.18+)
 - `BRANCH_Y_TARGETS`: diamond=-59, iron=16, coal=96, gold=-16, copper=48, lapis=0, redstone=-59, emerald=232
 - FSM: `PLAN_BRANCH` → `NAV_TO_START` → `DIG_BRANCH` → `NEXT_BRANCH` → `COMPLETE/FAIL`
-- Параметры: `branchLength=32`, `branchSpacing=4` (оптимальное покрытие без перекрытия), `maxBranches=8`
-- На каждом шаге сканирует 3 блока влево/вправо — при обнаружении руды копает и возвращается на ось
-- Интеграция `dropJunk()` при `fillRatio >= 0.85` прямо во время копки
-- Расстановка факелов каждые 8 шагов
-- Защита от опасных блоков (lava, water) и гравитационных блоков (sand, gravel)
-- Поддерживает `shouldInterrupt`, `alive()`, кастомные `targetY`, `branchLength`, `maxBranches`
+- Parameters: `branchLength=32`, `branchSpacing=4` (optimal coverage without overlap), `maxBranches=8`
+- Each step scans 3 blocks left/right — on ore found digs and returns to axis
+- `dropJunk()` integrated at `fillRatio >= 0.85` during active mining
+- Torch placement every 8 steps
+- Protection against hazard blocks (lava, water) and gravity blocks (sand, gravel)
+- Supports `shouldInterrupt`, `alive()`, custom `targetY`, `branchLength`, `maxBranches`
 
-### `systems/ResourceSystem.js` — интеграция
-- Новая цепочка при `caveResult === 'fail'`: **CaveExplorer** → **BranchMine** → **ShaftDig**
-- BranchMineJob вставлен между cave fail и `_digShaftDown` как более эффективный fallback
+### `systems/ResourceSystem.js` — integration
+- New fallback chain on `caveResult === 'fail'`: **CaveExplorer** → **BranchMine** → **ShaftDig**
+- BranchMineJob inserted between cave fail and `_digShaftDown` as more efficient fallback
 
-### Тесты `scripts/unit-branch-mine.js` — **20/20 ✅**
-
----
-
-## [2026-05-21 #3] - InventoryManager: авто-выброс мусора во время экспедиций
-
-### `utils/InventoryManager.js` — новый модуль
-- `JUNK_ITEMS` — явный список мусора: cobblestone, dirt, gravel, andesite, diorite, granite, sand, netherrack и др.
-- `KEEP_ALWAYS` — защищённый список: все инструменты, броня, руда, еда, факелы, крафтинг-стол — **никогда не дропаются**
-- `isJunk(item)` — `true` если в `JUNK_ITEMS` ИЛИ не в `KEEP_ALWAYS` и нулевая ценность по `ITEM_VALUES`
-- `shouldDropJunk(bot, threshold=0.85)` — `true` если `fillRatio ≥ threshold` (31+ слотов)
-- `dropJunk(bot, opts)` — сбрасывает мусор до `targetFreeSlots` слотов свободно; сначала `JUNK_ITEMS`, потом нулевые неизвестные; `maxDrops=16` как safety cap
-
-### `systems/OreJob.js` — интеграция
-- Перед каждой проверкой `slots <= 2 → paused_for_home`: если `shouldDropJunk(0.85)` → `dropJunk()` прямо в шахте
-- Бот **не идёт домой** пока есть мусор для выброса
-
-### `systems/ResourceSystem.js` — интеграция
-- Перед `INVENTORY_FULL` стопом gather-цикла: аналогичный вызов `dropJunk()`
-- Работает и для TreeJob (дерево) и для OreJob (руда)
-
-### Тесты `scripts/unit-inventory-manager.js` — **20/20 ✅**
+### Tests `scripts/unit-branch-mine.js` — **20/20 ✅**
 
 ---
 
-## [2026-05-21 #2] - Cave Persistence: сохранение посещённых пещер
+## [2026-05-21 #3] - InventoryManager: auto-drop junk during expeditions
 
-### `utils/CavePersistence.js` — новый модуль
-- `loadVisitedCaves(map, ttlMs, filePath)` — загружает `caves.json` при старте, истёкшие записи (> TTL) сбрасываются
-- `saveVisitedCaves(map, ttlMs, filePath)` — записывает Map на диск, вычищая expired перед записью
-- `addAndPersist(map, key, ts, ttlMs, filePath)` — добавляет запись в Map + немедленный flush на диск
-- Формат: `{ "entries": [["x,y,z", timestamp], ...], "savedAt": ... }`
-- Файл: `./config/caves.json` (рядом с `homebase.json`)
+### `utils/InventoryManager.js` — new module
+- `JUNK_ITEMS` — explicit junk list: cobblestone, dirt, gravel, andesite, diorite, granite, sand, netherrack, etc.
+- `KEEP_ALWAYS` — protected list: all tools, armor, ores, food, torches, crafting table — **never dropped**
+- `isJunk(item)` — `true` if in `JUNK_ITEMS` OR not in `KEEP_ALWAYS` and zero value per `ITEM_VALUES`
+- `shouldDropJunk(bot, threshold=0.85)` — `true` if `fillRatio ≥ threshold` (31+ slots filled)
+- `dropJunk(bot, opts)` — drops junk until `targetFreeSlots` free; `JUNK_ITEMS` first, then zero-value unknowns; `maxDrops=16` safety cap
 
-### `systems/ResourceSystem.js` — интеграция
-- В конструкторе: `loadVisitedCaves()` при инициализации — бот не переходит пустые пещеры после перезапуска
-- После каждого `CaveExplorerJob.run()`: `saveVisitedCaves()` — состояние немедленно на диске
-- TTL 25 минут (совпадает с `CAVE_VISITED_TTL_MS` в `CaveExplorerJob`)
+### `systems/OreJob.js` — integration
+- Before each `slots <= 2 → paused_for_home` check: if `shouldDropJunk(0.85)` → `dropJunk()` directly in the shaft
+- Bot **does not go home** while there is junk to drop
 
-### Тесты `scripts/unit-cave-persistence.js` — **15/15 ✅**
+### `systems/ResourceSystem.js` — integration
+- Before `INVENTORY_FULL` gather-loop stop: same `dropJunk()` call
+- Works for both TreeJob (wood) and OreJob (ores)
+
+### Tests `scripts/unit-inventory-manager.js` — **20/20 ✅**
+
+---
+
+## [2026-05-21 #2] - Cave Persistence: saving visited caves across restarts
+
+### `utils/CavePersistence.js` — new module
+- `loadVisitedCaves(map, ttlMs, filePath)` — loads `caves.json` on startup; expired entries (> TTL) are discarded
+- `saveVisitedCaves(map, ttlMs, filePath)` — writes Map to disk, pruning expired entries before write
+- `addAndPersist(map, key, ts, ttlMs, filePath)` — adds entry to Map + immediate flush to disk
+- Format: `{ "entries": [["x,y,z", timestamp], ...], "savedAt": ... }`
+- File: `./config/caves.json` (alongside `homebase.json`)
+
+### `systems/ResourceSystem.js` — integration
+- Constructor: `loadVisitedCaves()` on init — bot skips exhausted caves after restart
+- After each `CaveExplorerJob.run()`: `saveVisitedCaves()` — state immediately on disk
+- TTL 25 minutes (matches `CAVE_VISITED_TTL_MS` in `CaveExplorerJob`)
+
+### Tests `scripts/unit-cave-persistence.js` — **15/15 ✅**
 
 ---
 
 ## [2026-05-21 #1] - Phase 3: TacticalDecisionEngine
 
-### Единый источник истины для угроз и выживания
+### Single source of truth for threats and survival
 
-#### Новый модуль `core/TacticalDecisionEngine.js`
-- Регистрируется в `Scheduler` с интервалом **1 тик** (`physicsTick`) — самый высокий приоритет
-- Вызывает `buildDecisionContext()` **один раз за тик** для всего бота
-- Кеширует результат в `brain.decisionContext` (frozen, обогащённый Scorer-весами)
-- Эмитит `TacticalEvents.CONTEXT_UPDATED` (`tactical:context_updated`) — все системы могут подписаться
+#### New module `core/TacticalDecisionEngine.js`
+- Registered in `Scheduler` at **1 tick** interval (`physicsTick`) — highest priority
+- Calls `buildDecisionContext()` **once per tick** for the entire bot
+- Caches result in `brain.decisionContext` (frozen, enriched with scorer weights)
+- Emits `TacticalEvents.CONTEXT_UPDATED` (`tactical:context_updated`) — all systems can subscribe
 
-#### Scorer-веса (поля `brain.decisionContext`)
-| Поле | Диапазон | Логика |
-|------|----------|--------|
-| `threatScore` | 0..1 | `1.0` при `immediateDanger`, `0.7` при `recentAggroPressure`, иначе масштаб `combinedPressure/3` |
-| `survivalScore` | 0..1 | `hpScore + foodScore×0.4` (HP критичнее еды) |
-| `resourceScore` | 0..1 | `0` без задачи; `0.5..1.0` в зависимости от `currentTask` + `inventoryFillRatio` + `inventoryValueScore` |
+#### Scorer weights (`brain.decisionContext` fields)
+| Field | Range | Logic |
+|-------|-------|-------|
+| `threatScore` | 0..1 | `1.0` on `immediateDanger`, `0.7` on `recentAggroPressure`, otherwise scale `combinedPressure/3` |
+| `survivalScore` | 0..1 | `hpScore + foodScore×0.4` (HP more critical than food) |
+| `resourceScore` | 0..1 | `0` without task; `0.5..1.0` based on `currentTask` + `inventoryFillRatio` + `inventoryValueScore` |
 
-#### `core/EventRegistry.js` — новые события
-- `TacticalEvents.CONTEXT_UPDATED` (`tactical:context_updated`) — добавлен в `REGISTERED_EVENT_DEFINITIONS` и экспортирован
+#### `core/EventRegistry.js` — new events
+- `TacticalEvents.CONTEXT_UPDATED` (`tactical:context_updated`) — added to `REGISTERED_EVENT_DEFINITIONS` and exported
 
-#### `core/BotBrain.js` — интеграция
-- `brain.decisionContext = null` — кеш текущего контекста (null до первого тика)
-- `brain.tacticalEngine` — ссылка на движок
-- Инициализируется **последним** в `init()`, уничтожается **первым** в `destroy()`
+#### `core/BotBrain.js` — integration
+- `brain.decisionContext = null` — current context cache (null before first tick)
+- `brain.tacticalEngine` — engine reference
+- Initialized **last** in `init()`, destroyed **first** in `destroy()`
 
-#### `systems/SurvivalSystem.js` — устранено дублирование
-- Убран прямой вызов `evaluateThreatPressure()` в `_tick()`
-- Читает готовый `brain.decisionContext` — если `null`, тик пропускается (безопасный fallback)
+#### `systems/SurvivalSystem.js` — deduplication
+- Removed direct `evaluateThreatPressure()` call in `_tick()`
+- Reads ready `brain.decisionContext` — if `null`, tick skipped (safe fallback)
 
-#### `systems/GatherGuardSystem.js` — умный кеш
-- Добавлен `_getOrBuildPressure(memory)`:
-  - Если `brain.decisionContext` свежее 150мс → возвращает кеш (0 пересчётов)
-  - Иначе → live вызов `evaluateThreatPressure()` (async-handler может работать после await)
+#### `systems/GatherGuardSystem.js` — smart cache
+- Added `_getOrBuildPressure(memory)`:
+  - If `brain.decisionContext` fresher than 150ms → returns cache (0 recalculations)
+  - Otherwise → live `evaluateThreatPressure()` call (async-handler may run after await)
 
-#### Тесты `scripts/unit-phase3.js` — **15/15 ✅**
+#### Tests `scripts/unit-phase3.js` — **15/15 ✅**
 
 ---
 
@@ -187,78 +187,78 @@ All notable changes to the AI Bot project.
 
 ### Cyberpunk Launcher
 
-#### Новый лаунчер с автообновлением (`scripts/launcher.js`)
-- **ASCII-логотип NULLBIT** — figlet с шрифтом ANSI Shadow
-- **Глитч-эффекты** — функция `glitchText()` с случайными спецсимволами (#, @, _, █, ▓, ▒, ░)
-- **Хакерский интерфейс** — статусы `[ SYS ]`, `[ OK ]`, `[ ERR ]`, `[ WARN ]` в капсе
-- **Киберпанк прогресс-бар** — `DOWNLOADING [████░░░░░░] 45% | 350/700 MB`
-- **Глитч-оповещения** — красный мерцающий текст при обнаружении обновления
+#### New launcher with auto-update (`scripts/launcher.js`)
+- **NULLBIT ASCII logo** — figlet with ANSI Shadow font
+- **Glitch effects** — `glitchText()` with random special characters (#, @, _, █, ▓, ▒, ░)
+- **Hacker interface** — status tags `[ SYS ]`, `[ OK ]`, `[ ERR ]`, `[ WARN ]` in uppercase
+- **Cyberpunk progress bar** — `DOWNLOADING [████░░░░░░] 45% | 350/700 MB`
+- **Glitch alerts** — red blinking text on update detected
 
-#### Автообновление через GitHub Releases API
-- Чтение `bot_version` из `config.json`
-- GET-запрос на `https://api.github.com/repos/nullbit26/Nullbit-Client/releases/latest` (`User-Agent: Nullbit-Launcher`)
-- Извлекает `tag_name` → стрипает `v` → сравнивает semver
-- При обновлении: выводит **ПАТЧНОУТ** (`body` релиза) серым цветом
-- Ждёт 2 секунды, затем скачивает `AIBot.exe` из `assets[]` через `browser_download_url`
-- Бэкап старой версии → замена → обновление `bot_version` в `config.json`
+#### Auto-update via GitHub Releases API
+- Reads `bot_version` from `config.json`
+- GET request to `https://api.github.com/repos/nullbit26/Nullbit-Client/releases/latest` (`User-Agent: Nullbit-Launcher`)
+- Extracts `tag_name` → strips `v` → compares semver
+- On update: prints **PATCH NOTES** (`body` of release) in gray
+- Waits 2 seconds, then downloads `AIBot.exe` from `assets[]` via `browser_download_url`
+- Backs up old version → replaces → updates `bot_version` in `config.json`
 
-#### Управление процессом
-- Лаунчер остается висеть (не detached)
-- При закрытии окна лаунчера — бот тоже завершается
-- Вывод статуса: `[+] NULLBIT РАБОТАЕТ`
+#### Process management
+- Launcher stays alive (not detached)
+- Closing launcher window also terminates the bot
+- Status output: `[+] NULLBIT IS RUNNING`
 
-#### Зависимости лаунчера
+#### Launcher dependencies
 ```json
 {
-  "chalk": "^4.1.2",        // Цветной вывод (CJS версия для pkg)
-  "figlet": "^1.11.0",      // ASCII-арт
-  "cli-progress": "^3.12.0", // Прогресс-бар
-  "axios": "^1.16.1",        // HTTP запросы
-  "fs-extra": "^11.2.0"      // Файловые операции
+  "chalk": "^4.1.2",        // Colored output (CJS version for pkg)
+  "figlet": "^1.11.0",      // ASCII art
+  "cli-progress": "^3.12.0", // Progress bar
+  "axios": "^1.16.1",        // HTTP requests
+  "fs-extra": "^11.2.0"      // File operations
 }
 ```
 
-#### Результат сборки
+#### Build output
 ```
 Release/
-├── AIBot.exe      (554 MB)  ← Основной бот
-├── Launcher.exe   (58 MB)   ← Cyberpunk лаунчер
-├── config.json              ← Версия + лицензия
-└── README.txt               ← Инструкция
+├── AIBot.exe      (554 MB)  ← Main bot
+├── Launcher.exe   (58 MB)   ← Cyberpunk launcher
+├── config.json              ← Version + license
+└── README.txt               ← User instructions
 ```
 
 ---
 
 ## [2026-05-20] - Release Build System v2.0: esbuild + KeyAuth + .exe
 
-### Новая система сборки релиза
+### New release build system
 
-#### 1. Архитектура сборки (`scripts/build-v2.js`)
-- **esbuild bundle** — весь код проекта собирается в один файл
-- **KeyAuth интеграция** — 2-этапная авторизация (init session → license check)
-- **Компиляция в .exe** — через pkg, готовое приложение 700+ MB
-- **Внешний конфиг** — `config.json` с лицензионным ключом
+#### 1. Build architecture (`scripts/build-v2.js`)
+- **esbuild bundle** — entire project bundled into a single file
+- **KeyAuth integration** — 2-step auth (init session → license check)
+- **Compile to .exe** — via pkg, final binary 700+ MB
+- **External config** — `config.json` with license key
 
-#### 2. Защита кода
-- ✅ esbuild minification — нечитаемый код
-- ✅ Single bundle — все модули встроены, нет внешних `require()`
-- ✅ pkg compilation — код внутри бинарника
-- ✅ KeyAuth license check — HWID привязка, online активация
+#### 2. Code protection
+- ✅ esbuild minification — obfuscated output
+- ✅ Single bundle — all modules embedded, no external `require()`
+- ✅ pkg compilation — code inside binary
+- ✅ KeyAuth license check — HWID binding, online activation
 
-#### 3. Процесс авторизации KeyAuth
+#### 3. KeyAuth authorization flow
 ```
-1. GET /api/1.2/?type=init → получаем sessionid
-2. POST /api/1.2/ с sessionid + license_key + hwid → проверка
-3. При успехе → запуск бота
+1. GET /api/1.2/?type=init → get sessionid
+2. POST /api/1.2/ with sessionid + license_key + hwid → verify
+3. On success → launch bot
 ```
 
-#### 4. Файлы сборки
-- `scripts/build-v2.js` — основной скрипт (6 шагов)
-- `scripts/verify-build.js` — проверка готовности
-- `scripts/license-check.js` — модуль проверки (для разработки)
-- `BUILD_SETUP.md` — полная документация
+#### 4. Build files
+- `scripts/build-v2.js` — main build script (6 steps)
+- `scripts/verify-build.js` — readiness verification
+- `scripts/license-check.js` — license check module (for development)
+- `BUILD_SETUP.md` — full documentation
 
-#### 5. Зависимости сборки
+#### 5. Build dependencies
 ```json
 {
   "esbuild": "^0.20.2",
@@ -269,94 +269,94 @@ Release/
 }
 ```
 
-### История версий сборки
-- **v2.0** — esbuild bundle, фикс require() ошибок, KeyAuth session init
-- **v1.0** — файл-за-файл обфускация (устарело)
+### Build version history
+- **v2.0** — esbuild bundle, fixed require() errors, KeyAuth session init
+- **v1.0** — file-by-file obfuscation (obsolete)
 
 ---
 
-## [2026-05-20] - PvP Mode: Полный ремонт системы ближнего боя
+## [2026-05-20] - PvP Mode: Full melee combat system overhaul
 
-### Новые возможности
+### New features
 
-#### 1. Авто-экипировка (`systems/PvPMode.js`)
-- Автоматическая экипировка лучшей брони (приоритет: нетерит → алмаз → железо)
-- Автоматическая экипировка щита в off-hand
-- Автоматическая экипировка лучшего оружия (меч/топор)
-- Принудительная смена неправильных предметов в руке (щит/зелье → меч)
+#### 1. Auto-equip (`systems/PvPMode.js`)
+- Auto-equips best armor (priority: netherite → diamond → iron)
+- Auto-equips shield in off-hand
+- Auto-equips best weapon (sword/axe)
+- Force-swaps wrong items in hand (shield/potion → sword)
 
-#### 2. Улучшенная система хила
-- **Приоритет на близкой дистанции**: splash potion → golden apple
-- **Приоритет на дальней дистанции**: golden apple → drinkable potions → food
-- **Критический режим** (HP ≤ 6): кулдаун хила снижен с 1500мс до 500мс
-- **Не прерывает еду** — хил имеет приоритет над атакой
+#### 2. Improved healing system
+- **Close range priority**: splash potion → golden apple
+- **Far range priority**: golden apple → drinkable potions → food
+- **Critical mode** (HP ≤ 6): heal cooldown reduced from 1500ms to 500ms
+- **Does not interrupt eating** — heal has priority over attack
 
-#### 3. Voice Chat фразы
-- Вход в PvP: "Ну, сука, пизда тебе, еблан"
-- Убийство игрока: "ха-ха, обоссан лучшим"
+#### 3. Voice Chat phrases
+- PvP entry: "Ну, сука, пизда тебе, еблан"
+- Player kill: "ха-ха, обоссан лучшим"
 
-#### 4. Умная защита щитом
-- Щит всегда в off-hand во время боя
-- Щит не трогается во время еды (чтобы не прервать хил)
-- Автоматическая ре-экипировка щита после еды
+#### 4. Smart shield management
+- Shield always in off-hand during combat
+- Shield untouched while eating (prevents heal interrupt)
+- Auto re-equips shield after eating
 
-### Исправления багов
+### Bug fixes
 
-| Баг | Решение |
-|-----|---------|
-| Спам логов "CRITICAL HP" | Флаг `_lastCriticalLog` — лог раз в секунду |
-| Бот не менял меч после еды | `finally` блок с `_equipBestWeapon()` в `_useFoodItem()` |
-| Двойная попытка consume | Флаг `_isEating` предотвращает повторный вызов `bot.consume()` |
-| Щит в основной руке | Принудительная проверка в `_equipBestWeapon()` |
-| Не вся броня экипировалась | Асинхронный `_equipBestGear()` с `await` |
-| Splash potions не работали | Улучшенная проверка NBT структуры |
-| Щит прерывал хил | Проверка `this._isEating` в shield методах |
-| Не останавливался по "стоп" | Подписка на `MovementEvents.SET_IDLE` |
-| Не хилился на критическом HP | Форсированный heal с приоритетом над атакой |
+| Bug | Fix |
+|-----|-----|
+| "CRITICAL HP" log spam | `_lastCriticalLog` flag — log once per second |
+| Bot didn't re-equip sword after eating | `finally` block with `_equipBestWeapon()` in `_useFoodItem()` |
+| Double consume attempt | `_isEating` flag prevents duplicate `bot.consume()` |
+| Shield in main hand | Force-check in `_equipBestWeapon()` |
+| Not all armor equipped | Async `_equipBestGear()` with `await` |
+| Splash potions not working | Improved NBT structure check |
+| Shield interrupted eating | `this._isEating` check in shield methods |
+| Didn't stop on 'stop' command | Subscribe to `MovementEvents.SET_IDLE` |
+| No heal on critical HP | Forced heal with priority over attack |
 
-### Технические изменения
+### Technical changes
 
 ```js
-// Новые флаги в PvPMode constructor
-this._isEating = false          // Предотвращает двойное consume
-this._lastCriticalLog = 0       // Дебаг-лог раз в секунду
+// New flags in PvPMode constructor
+this._isEating = false          // Prevents double consume
+this._lastCriticalLog = 0       // Debug log once per second
 
-// Приоритет хила над атакой
+// Heal priority over attack
 if (!this._isEating && now - this._lastAttack >= this._ATTACK_COOLDOWN) {
   this._tryAttack()
 }
 
-// Критический HP: форсированный heal
+// Critical HP: forced heal
 if (this._bot.health <= 6 && !this._isEating) {
   this._tryHeal(now)
-  return // Пропускаем атаку
+  return // Skip attack
 }
 ```
 
-### Файлы
-- `docs/PVP_MODE.md` — полная документация системы
+### Files
+- `docs/PVP_MODE.md` — full system documentation
 
 ---
 
-## [2026-05-20] - Flee Logic Overhaul: исправление вечного BREAK_CONTACT
+## [2026-05-20] - Flee Logic Overhaul: fix for eternal BREAK_CONTACT
 
-### Проблемы
-- **Вечный BREAK_CONTACT**: Бот застревал в фазе BREAK_CONTACT из-за устаревших дистанций угроз (`memory.distance` вместо live позиций)
-- **Pathfinder timeout spam**: `thinkTimeout=1500ms` слишком низкий для flee pathfinding, постоянные replan'ы
-- **Избыточная дистанция flee**: `navBoost=20` блоков вызывал failures pathfinder в сложном terrain
-- **Преждевременный flee**: Низкие пороги вызывали flee при хорошем HP
-- **Некорректное логирование**: `nearest:0` когда угроз нет (должно быть `null`)
+### Problems
+- **Eternal BREAK_CONTACT**: Bot stuck due to stale threat distances (`memory.distance` instead of live positions)
+- **Pathfinder timeout spam**: `thinkTimeout=1500ms` too low for flee pathfinding, constant replans
+- **Excessive flee distance**: `navBoost=20` blocks caused pathfinder failures in complex terrain
+- **Premature flee**: Low thresholds triggered flee at decent HP
+- **Incorrect logging**: `nearest:0` when no threats exist (should be `null`)
 
-### Исправления
+### Fixes
 
-#### 1. Актуальные дистанции угроз (`combat/flee/evaluateThreatPressure.js`)
+#### 1. Live threat distances (`combat/flee/evaluateThreatPressure.js`)
 ```js
-// Было: устаревшие memory.distance
+// Before: stale memory.distance
 for (const row of threats) {
   const d = Number(row?.distance)  // STALE VALUE
 }
 
-// Стало: live позиция entity когда доступна
+// After: live entity position when available
 for (const row of threats) {
   let d
   if (botPos && row?.id != null) {
@@ -371,280 +371,248 @@ for (const row of threats) {
 }
 ```
 
-#### 2. Pathfinder таймауты (`systems/CombatSystem.js`)
+#### 2. Pathfinder timeouts (`systems/CombatSystem.js`)
 ```js
-// Во время flee: увеличены таймауты
-this._bot.pathfinder.thinkTimeout = 4000  // было 1500
-this._bot.pathfinder.tickTimeout = 80     // было 45
+// During flee: increased timeouts
+this._bot.pathfinder.thinkTimeout = 4000  // was 1500
+this._bot.pathfinder.tickTimeout = 80     // was 45
 
-// Восстанавливаются после flee
+// Restored after flee ends
 this._bot.pathfinder.thinkTimeout = 24000
 this._bot.pathfinder.tickTimeout = 150
 ```
 
-#### 3. Дистанция flee (`config.js`)
+#### 3. Flee distance (`config.js`)
 ```js
-// Уменьшена дистанция для более быстрого pathfinding
-combatFleeNavDistance: Number(process.env.COMBAT_FLEE_NAV_DISTANCE || 10)  // было 20
+// Reduced for faster pathfinding
+combatFleeNavDistance: Number(process.env.COMBAT_FLEE_NAV_DISTANCE || 10)  // was 20
 ```
 
-#### 4. Пороги flee (`config.js`)
+#### 4. Flee thresholds (`config.js`)
 ```js
-// Повышен порог для предотвращения преждевременного flee
-combatFleeRetreatScoreThreshold: Math.max(0.4, Math.min(4, Number(process.env.COMBAT_FLEE_RETREAT_SCORE_THRESHOLD || 2.5)))  // было 1.95
+// Higher threshold to prevent premature flee
+combatFleeRetreatScoreThreshold: Math.max(0.4, Math.min(4, Number(process.env.COMBAT_FLEE_RETREAT_SCORE_THRESHOLD || 2.5)))  // was 1.95
 
-// Снижен HP порог для flee только при реальном damage
+// Lower HP gate to flee only when actually damaged
 combatFleeRetreatRiskHpRatioMax: (() => {
-  // возвращает 0.72 (было 0.94)
+  // returns 0.72 (was 0.94)
 })()
 ```
 
-#### 5. Игроки-угрозы в направлении flee (`systems/CombatSystem.js`)
-- Модифицирован `_buildRandomFleeGoal` для включения hostile players из `getCurrentThreats()`
-- Бот теперь убегает от атакующих игроков, а не только от мобов
+#### 5. Player threats in flee direction (`systems/CombatSystem.js`)
+- Modified `_buildRandomFleeGoal` to include hostile players from `getCurrentThreats()`
+- Bot now flees from attacking players, not only mobs
 
-#### 6. Исправление логирования (`systems/CombatSystem.js`)
+#### 6. Logging fix (`systems/CombatSystem.js`)
 ```js
-// Исправлено nearest:0 когда угроз нет
+// Fixed nearest:0 when no threats exist
 const startNearest = (nearest != null && Number.isFinite(Number(nearest))) ? Number(nearest) : null
 ```
 
-### Результаты
-- ✅ Фазы flee корректно переключаются (BREAK_CONTACT → STABILIZE → RECOVER)
-- ✅ Бот выходит из flee когда угрозы исчезли
-- ✅ Уменьшены pathfinder timeouts во время flee
-- ✅ Бот flee только при HP ≤ 72% или под реальной угрозой
-- ✅ Направление flee учитывает мобов и игроков
-- ✅ Корректное логирование дистанций угроз
+### Results
+- ✅ Flee phases transition correctly (BREAK_CONTACT → STABILIZE → RECOVER)
+- ✅ Bot exits flee when threats are gone
+- ✅ Reduced pathfinder timeouts during flee
+- ✅ Bot flees only at HP ≤ 72% or under real threat
+- ✅ Flee direction accounts for both mobs and players
+- ✅ Accurate threat distance logging
 
-### Текущие значения конфигурации
-- `retreatScoreThreshold`: 2.5 (было 1.95)
-- `retreatRiskHpRatioMax`: 0.72 (было 0.94)  
-- `navBoost`: 10 блоков (было 20)
-- `thinkTimeout`: 4000ms во время flee (было 1500ms)
-- `tickTimeout`: 80ms во время flee (было 45ms)
+### Current config values
+- `retreatScoreThreshold`: 2.5 (was 1.95)
+- `retreatRiskHpRatioMax`: 0.72 (was 0.94)
+- `navBoost`: 10 blocks (was 20)
+- `thinkTimeout`: 4000ms during flee (was 1500ms)
+- `tickTimeout`: 80ms during flee (was 45ms)
 
 ---
 
-## [2026-05-19 #6] - GlobalWatchdog: глобальный детектор зависаний 24/7
+## [2026-05-19 #6] - GlobalWatchdog: global deadlock detector 24/7
 
-### Новый модуль `systems/GlobalWatchdog.js`
-- Отслеживает `bot.entity.position` раз в секунду через `setInterval`
-- **Пороги зависания (deadlock):**
-  - `COMBAT` / `FLEE` → 30 секунд без смещения >1 блока
-  - `GATHER` (taskState.currentTask.kind==='gather') / `FOLLOWING` → 90 секунд
-  - `IDLE`, `RecoveryHold.isActive()`, `brain.watchdogExempt=true` — не мониторятся
-- **30 сек без движения** → предупреждение в лог: `[GlobalWatchdog] Бот простаивает Xs. Текущее состояние: X, Текущая задача: Y`
-- **Порог достигнут** → эмит `WatchdogEvents.DEADLOCK_DETECTED` на шину → `pathfinder.stop()` + `clearControlStates()` + `nav:stop` → 200ms задержка → `state.transition(IDLE)` + `recoveryHoldSystem.enter('WATCHDOG_DEADLOCK')`
-- Трекер сбрасывается при каждом `CoreEvents.STATE_CHANGED`
-- Сообщение в чат при дедлоке: `[Watchdog] Зависание обнаружено (...). Перезапуск...`
+### New module `systems/GlobalWatchdog.js`
+- Tracks `bot.entity.position` once per second via `setInterval`
+- **Deadlock thresholds:**
+  - `COMBAT` / `FLEE` → 30s without >1 block movement
+  - `GATHER` / `FOLLOWING` → 90s
+  - `IDLE`, `RecoveryHold.isActive()`, `brain.watchdogExempt=true` — not monitored
+- **30s without movement** → warning: `[GlobalWatchdog] Bot idle for Xs. State: X, Task: Y`
+- **Threshold reached** → emits `WatchdogEvents.DEADLOCK_DETECTED` → `pathfinder.stop()` + `clearControlStates()` + `nav:stop` → 200ms → `state.transition(IDLE)` + `recoveryHoldSystem.enter('WATCHDOG_DEADLOCK')`
+- Tracker resets on every `CoreEvents.STATE_CHANGED`
+- Chat message on deadlock: `[Watchdog] Deadlock detected (...). Restarting...`
 
-### `core/EventRegistry.js` — новые события
+### `core/EventRegistry.js` — new events
 - `WatchdogEvents.DEADLOCK_DETECTED` (`watchdog:deadlock_detected`) — payload: `{ coreState, taskKind?, stuckMs, at }`
 - `WatchdogEvents.RESET` (`watchdog:reset`) — payload: `{ at }`
-- Оба добавлены в `REGISTERED_EVENT_DEFINITIONS` и экспортированы
+- Both added to `REGISTERED_EVENT_DEFINITIONS` and exported
 
-### Graceful exit listeners — все ключевые системы
-- **`ResourceSystem._onWatchdogDeadlock()`**: если gather активен → `nav:stop` + `clearControlStates` + `pauseGather('WATCHDOG_DEADLOCK')`
-- **`HomeBaseSystem._onWatchdogDeadlock()`**: если `_isRunning` или `_navigating` → сбрасывает флаги + `nav:stop`
-- **`CombatSystem._onWatchdogDeadlock()`**: если COMBAT/FLEE → `_clearFleeWatchdog` + `nav:stop` + `clearControlStates` + `stopAttack` + `state.transition(IDLE)` (заменил старый `_onWatchdogDeadlock` который был подключён вручную)
+### Graceful exit listeners — all key systems
+- **`ResourceSystem._onWatchdogDeadlock()`**: if gather active → `nav:stop` + `clearControlStates` + `pauseGather('WATCHDOG_DEADLOCK')`
+- **`HomeBaseSystem._onWatchdogDeadlock()`**: if `_isRunning` or `_navigating` → resets flags + `nav:stop`
+- **`CombatSystem._onWatchdogDeadlock()`**: if COMBAT/FLEE → `_clearFleeWatchdog` + `nav:stop` + `clearControlStates` + `stopAttack` + `state.transition(IDLE)`
 
-### `systems/RecoveryHoldSystem.js` — jitter-escape при дедлоке
-- Новая причина `WATCHDOG_DEADLOCK` в `REASONS`
-- При `enter('WATCHDOG_DEADLOCK')` вызывается `_doJitterEscape()`: прыжок + случайный страф (left/right/back/forward) на 800ms → `clearControlStates()`. Вышибает бота из phantom-блоков и застреваний у стен
+### `systems/RecoveryHoldSystem.js` — jitter-escape on deadlock
+- New reason `WATCHDOG_DEADLOCK` in `REASONS`
+- On `enter('WATCHDOG_DEADLOCK')`: `_doJitterEscape()` — jump + random strafe 800ms → `clearControlStates()`
 
-### `core/BotBrain.js` — интеграция
-- `globalWatchdog` и `watchdogExempt` добавлены как поля (уже присутствовали в конструкторе)
-- `GlobalWatchdog` создаётся в `attachGameplaySystems`, инициализируется в `init()`, уничтожается первым в `destroy()`
+### `core/BotBrain.js` — integration
+- `globalWatchdog` and `watchdogExempt` added as fields
+- `GlobalWatchdog` created in `attachGameplaySystems`, init in `init()`, destroyed first in `destroy()`
 
 ---
 
-## [2026-05-19 #5] - HomeBaseSystem навигация: бесконечный partial-loop фикс
+## [2026-05-19 #5] - HomeBaseSystem navigation: infinite partial-loop fix
 
-### HomeBaseSystem `_navigateToBase` — бот застревал после выхода из шахты (BUG FIX)
-- **Баг**: после `_digToSurface` бот выходил на поверхность (Y=65) но оставался в 121 блоке от базы. Pathfinder слал `status:partial` вечно, бот спинил `re-emitting goto` каждые 6 сек без каких-либо действий. Дистанция оставалась 121.7 — terrain/лес/вода между шахтой и базой блокировал путь, а горизонтальный stuck detection отсутствовал.
-- **Фикс**: добавлены два независимых трекера прогресса:
-  - `lastProgressDist / lastProgressAt` — фиксирует реальный прогресс (смещение >2 блоков в любом направлении)
-  - **30 сек без прогресса** → принудительно включает `canDig=true`, `canSwim=true`, `liquidCost=1` и пересчитывает маршрут — решает блокировку terrain/лесом/водой
-  - **90 сек без прогресса** → `return false` вместо вечного цикла
-- Прежний stuck detection (только подземный, через `stuckSince`) сохранён без изменений
+### HomeBaseSystem `_navigateToBase` — bot stuck after surfacing from mine (BUG FIX)
+- **Bug**: after `_digToSurface` bot reached surface (Y=65) but was 121 blocks from base. Pathfinder sent `status:partial` forever, bot spun `re-emitting goto` every 6s. Terrain/forest/water blocked path; no horizontal stuck detection existed.
+- **Fix**: two independent progress trackers:
+  - `lastProgressDist / lastProgressAt` — tracks real progress (>2 block shift)
+  - **30s without progress** → forces `canDig=true`, `canSwim=true`, `liquidCost=1`, recalculates route
+  - **90s without progress** → `return false` instead of infinite loop
+- Previous underground stuck detection (via `stuckSince`) preserved unchanged
 
 ---
 
 ## [2026-05-19 #4] - Mining Shaft Optimization & Broken Pickaxe Recovery
 
-### ResourceSystem — вертикальный спуск к глубоким рудам
-- **`_digShaftDown(oreName)` стал роутером**:
-  - `targetY < 0` → новый метод `_digShaftDownVertical` (быстрый вертикальный шурф)
-  - `targetY ≥ 0` → прежняя лесенка (безопасно, нет риска падения)
-- **Новый метод `_digShaftDownVertical(targetY, oreName)`**:
-  - Копает колонну 1×2 прямо вниз, использует гравитацию для спуска
-  - Проверка безопасности каждый шаг: сканирует 8 блоков ниже — лава → стоп+чат, void (≥6 воздуха) → стоп+чат
-  - Anti-stuck: footY не меняется 4 итерации → abort
-  - Таймаут: deepslate 10s, обычные блоки 4s
-  - Возвращает `true` если достиг `targetY ± 3`
+### ResourceSystem — vertical descent to deep ores
+- **`_digShaftDown` is now a router**: `targetY < 0` → `_digShaftDownVertical` (fast vertical shaft); `targetY ≥ 0` → staircase
+- **`_digShaftDownVertical`**: 1×2 column straight down; lava/void safety check each step; anti-stuck after 4 idle iterations; timeout deepslate 10s / regular 4s; returns `true` if reached `targetY ± 3`
 - **TARGET_Y**: `{ diamond:-58, iron:16, coal:96, gold:-16, copper:48, lapis:0, redstone:-58, emerald:232 }`
 
-### ResourceSystem — `_climbToSurface()` оптимизация подъёма
-- **Порог DEEP_Y изменён**: теперь метод активируется при `Y < 0` (было `Y < -30`)
-- Копает 2 блока над головой, прыгает, повторяет до `Y ≥ 0`
+### ResourceSystem — `_climbToSurface()` optimization
+- DEEP_Y threshold changed to `Y < 0` (was `Y < -30`)
+- Digs 2 blocks above head, jumps, repeats until `Y ≥ 0`
 
-### ResourceSystem — обработка сломанной кирки во время подъёма
-- **Цепочка `_equipBestDigger()` при каждой итерации**:
-  1. Есть кирка в инвентаре → использовать
-  2. Нет кирки → сообщить в чат + голосом: "кирка сломалась, я под землёй"
-  3. Есть верстак + булыжник×3 + палки×2 → поставить верстак на пол, скрафтить каменную кирку, подобрать верстак
-  4. Нет материалов → топор как замена
-  5. Нет топора → лопата
-  6. Ничего → abort подъёма + лог
-- Лава над головой → abort (pathfinder берёт управление)
+### ResourceSystem — broken pickaxe handling during ascent
+- **`_equipBestDigger()` chain on each iteration**:
+  1. Pickaxe in inventory → use it
+  2. No pickaxe → chat + voice: "pickaxe broke, I'm underground"
+  3. Crafting table + cobblestone×3 + sticks×2 → place table, craft stone pickaxe, pick up table
+  4. No materials → axe as substitute
+  5. No axe → shovel
+  6. Nothing → abort ascent + log
+- Lava above → abort (pathfinder takes over)
 
-### StorageSystem — верстак в экспедицию
-- `restockForExpedition()` теперь берёт `crafting_table` из сундуков (1 шт. если нет в инвентаре)
-- Трекер `absentEverywhere.craftingTable` для случая отсутствия верстака во всех сундуках
+### StorageSystem — crafting table in expedition kit
+- `restockForExpedition()` now takes `crafting_table` from chests (1 unit if not in inventory)
+- Tracker `absentEverywhere.craftingTable` for case when no table in any chest
 
-### Исправлен невозможный крафт
-- Убрана попытка скрафтить каменную кирку в инвентарной сетке 2×2 — в vanilla требует верстак (3 блока в ширину)
+### Fixed impossible crafting
+- Removed attempt to craft stone pickaxe in 2×2 inventory grid — vanilla requires crafting table
 
 ---
 
 ## [2026-05-19 #3] - Mining QoL, Multi-Chest, Torch Placement, Target Amount
 
 ### OreJob — Torch Placement in Tunnels
-- Новый метод `_tryPlaceTorch()`: ставит факел каждые `TORCH_INTERVAL=8` шагов туннеля
-- Сначала пробует пол, потом ближайшую стену
-- Если факелов нет но есть уголь+палки — крафтит 4 штуки на месте
-- Константа `TORCH_INTERVAL = 8` в топе файла
+- New method `_tryPlaceTorch()`: places torch every `TORCH_INTERVAL=8` tunnel steps (floor first, then nearest wall)
+- If no torches but coal+sticks available — crafts 4 on the spot
+- Constant `TORCH_INTERVAL = 8` at top of file
 
 ### CraftingSystem — `craftTorches(targetCount)`
-- Новый метод: крафтит факелы из уголь/древесный уголь + палки (без верстака, 2×2)
-- Автоматически крафтит палки если их нет
-- Возвращает количество скрафченных факелов
+- New method: crafts torches from coal/charcoal + sticks (2×2, no crafting table); auto-crafts sticks if needed
 
 ### StorageSystem — Multi-Chest Support
-- `_openChest(pos)` теперь принимает конкретную позицию
-- `depositAll` итерирует по всем сундукам — переходит к следующему если текущий полон
-- `withdrawItem(name, count)` ищет предмет во всех сундуках до набора нужного количества
-- `withdrawCraftingMaterials` аналогично по всем сундукам
-- Новый метод `restockForExpedition()`: перебирает все сундуки и берёт:
-  - Лучшую кирку (если хуже iron)
-  - Лучший меч (если хуже stone)
-  - Еду до 16 шт (хлеб, варёное мясо, яблоки и т.д.)
-  - Факелы до 16 шт
-  - Лучшую броню (шлем/нагрудник/поножи/ботинки)
-  - После взятия автоматически надевает броню
+- `_openChest(pos)` now accepts specific position
+- `depositAll` iterates all chests — moves to next if current is full
+- `withdrawItem(name, count)` searches all chests until count gathered
+- `withdrawCraftingMaterials` same across all chests
+- New method `restockForExpedition()`: iterates all chests and takes best pickaxe, best sword, food×16, torches×16, best armor (auto-equips after)
 
 ### HomeBaseConfig — Multi-Chest Registry
-- `_chestPositions[]` — список всех сундуков в радиусе базы
-- `getChestPositions()` — возвращает массив всех позиций
-- `scanNearbyChests(bot, radius=10)` — пересканировать сундуки
-- `setBaseLocation` принимает `allChestPositions[]`
-- `saveToConfig`/`loadFromConfig` сохраняют/загружают `chestPositions`
+- `_chestPositions[]`, `getChestPositions()`, `scanNearbyChests(bot, radius=10)`
+- `setBaseLocation` accepts `allChestPositions[]`; `saveToConfig`/`loadFromConfig` save/load `chestPositions`
 
-### misc.js (команда "тут база")
-- При установке базы сканирует `findBlocks` в радиусе 10 блоков
-- Передаёт все найденные сундуки в `setBaseLocation`
-- Обновляет живой конфиг в `brain.homeBaseConfig`
-- Ответ: `"База установлена! 3 сундук(ов) в радиусе 10 блоков."`
+### misc.js ("set base" command)
+- On base setup scans `findBlocks` in 10-block radius, passes all chests to `setBaseLocation`
+- Updates live config in `brain.homeBaseConfig`
+- Bot reply: `"Base set! 3 chest(s) within 10 blocks."`
 
-### HomeBaseSystem — `executeRoundTrip` расширен
-- Шаг 4: взять факелы из сундука → крафтить если мало
-- Шаг 5: `restockForExpedition()` — полная подготовка к экспедиции
-- Пауза сокращена с 2000мс до 1000мс
+### HomeBaseSystem — `executeRoundTrip` extended
+- Step 4: take torches → craft if low; Step 5: `restockForExpedition()`; pause reduced 2000→ 1000ms
 
 ### ResourceSystem — Target Amount
-- `startGather(type, targetAmount=0)` — опциональная цель по количеству
-- Проверяет `dropMatcher` в инвентаре каждую итерацию цикла
-- При достижении цели: `stopGather('TARGET_REACHED')` + лог
-- `_onGatherStart` передаёт `payload.amount`
+- `startGather(type, targetAmount=0)` — optional target count
+- Checks `dropMatcher` in inventory each loop iteration
+- On target reached: `stopGather('TARGET_REACHED')` + log
+- `_onGatherStart` passes `payload.amount`
 
-### commandRegistry.js — Команды с количеством
-- Паттерны с числом для coal, iron, gold, diamond:
+### commandRegistry.js — Commands with count
+- Number patterns for coal, iron, gold, diamond:
   - `"добудь 30 железа"` → `{ resource: 'iron', amount: 30 }`
   - `"копай 2 стака угля"` → `{ resource: 'coal', amount: 128 }`
   - `"mine 64 iron"` → `{ resource: 'iron', amount: 64 }`
-- Поддержка русских стаков: `стак/стака/стаков`
+- Russian stack support: `стак/стака/стаков`
 
 ### resource.js handler
-- Парсит `parsed.args.amount`: число или `N стак(а/ов)` / `N stack(s)`
-- Ответ бота: `"Начинаю собирать iron (цель: 30 шт.)"`
+- Parses `parsed.args.amount`: number or `N стак(а/ов)` / `N stack(s)`
+- Bot reply: `"Starting to gather iron (target: 30)"`
 
 ---
 
 ## [2026-05-19 #2] - Drop Collection & HomeBaseSystem Fixes
 
-### OreJob `_tunnelToPos` — бот уходил ОТ дропа (CRITICAL BUG FIX)
-- **Баг**: `aX/aZ` вычислялись через `Math.sin(-yaw)/Math.cos(-yaw)` — математически **обратное** направление. Бот смотрел на дроп, но двигался от него. В логах: `dist=4.0 → 4.9 → 5.9 → FAILED dist=13.8`
-- **Фикс**: `Math.sin(-yaw)` → `Math.sin(yaw)`, `Math.cos(-yaw)` → `Math.cos(yaw)` — одна строка
+### OreJob `_tunnelToPos` — bot moved AWAY from drop (CRITICAL BUG FIX)
+- **Bug**: `Math.sin(-yaw)/Math.cos(-yaw)` = reversed direction. Bot looked at drop but moved away. Logs: `dist=4.0 → 4.9 → 5.9 → FAILED dist=13.8`
+- **Fix**: `Math.sin(-yaw)` → `Math.sin(yaw)`, `Math.cos(-yaw)` → `Math.cos(yaw)` — single line
 
-### OreJob `_collectDrops` — entity-based сбор дропов
-- **Было**: после копки шёл к позиции *блока* руды (дроп мог отлететь), использовал pathfinder
-- **Стало**:
-  - Сканирует реальные item-entity в радиусе 6×6×6 блоков через `bot.entities`
-  - Немедленно стопает pathfinder (`NavEvents.STOP`)
-  - Брутфорс `_tunnelToPos` к каждому дропу по точной entity-позиции
-  - `maxSteps` увеличен 15→20, arrival radius 1.2→1.5
-  - Guard на call-site: `horizDist ≤ 6 && dy ≤ 6 && pathSafe` перед попыткой
+### OreJob `_collectDrops` — entity-based drop collection
+- **Before**: went to *block* position after mining (drop may have flown), used pathfinder
+- **After**: scans real item-entities in 6×6×6 radius via `bot.entities`; stops pathfinder; brute-force `_tunnelToPos` to exact entity position; `maxSteps` 15→20, arrival radius 1.2→1.5
 
-### HomeBaseSystem — конфликт с OreJob (BUG FIX)
-- **Баг**: `_navigateToBase()` крутил poll-цикл и re-emit'ил `NavEvents.GOTO` каждые 6 сек даже после завершения round-trip — сбрасывал nav-цель OreJob
-- **Фикс**: подписка на `ResourceEvents.GATHER_START` → флаг `_gatherInterrupted` → abort nav loop + `_isRunning = false` при следующем poll-тике (≤500мс)
-- При gather-abort: `NavEvents.STOP` с reason `gather_took_over`, не выставляется `_pendingHomeReturn`
+### HomeBaseSystem — conflict with OreJob (BUG FIX)
+- **Bug**: `_navigateToBase()` re-emitted `NavEvents.GOTO` every 6s even after round-trip finished — was resetting OreJob nav goal
+- **Fix**: `ResourceEvents.GATHER_START` → `_gatherInterrupted` flag → abort nav loop + `_isRunning = false` within ≤500ms
+- On gather-abort: `NavEvents.STOP` reason `gather_took_over`; `_pendingHomeReturn` not set
 
 ---
 
 ## [2026-05-19] - Navigation & Mining Loop Fixes
 
-### ResourceSystem — бесконечный цикл `paused_for_home` (CRITICAL BUG FIX)
-- **Баг**: `OreJob` возвращал `paused_for_home` (нет кирки) → `ResourceSystem` не обрабатывал этот результат → цикл перезапускал `OreJob` 60+ раз/сек без задержки
-- **Фикс**: добавлен явный обработчик `paused_for_home` — вызывает `homeBaseSystem.executeRoundTrip()` для навигации домой + депозита + крафта, затем `sleep(2000)` guard
-- **Duplicate `sleep` SyntaxError**: случайный импорт `require('../utils/sleep')` конфликтовал с локальным определением — убран лишний импорт
+### ResourceSystem — infinite `paused_for_home` loop (CRITICAL BUG FIX)
+- **Bug**: `OreJob` returned `paused_for_home` (no pickaxe) → `ResourceSystem` didn't handle it → loop restarted `OreJob` 60+ times/sec with no delay
+- **Fix**: added explicit `paused_for_home` handler — calls `homeBaseSystem.executeRoundTrip()`, then `sleep(2000)` guard
+- **Duplicate `sleep` SyntaxError**: accidental `require('../utils/sleep')` conflicted with local definition — removed
 
-### OreJob `_tunnelToPos` — повторная копка одного блока (BUG FIX)
-- **Баг**: бот копал один и тот же блок снова и снова, не сдвигаясь с места; при цели ниже текущей позиции не опускался
-- **Фикс**:
-  - Stuck detection: 3 шага без движения (< 0.3 блока) → принудительный jump+forward
-  - Вертикальное движение выделено отдельно: `horizDist < 1.2 && dy < -1.5` → копает пол и ждёт гравитацию; `dy > 1.5` → копает потолок и прыгает
-  - Горизонтальный режим: дополнительно копает пол вперёд если `dy < -1`
-  - Время `forward` увеличено с 250мс до 350мс
-  - `lastStepPos` обновляется в каждой ветке для точного stuck detection
+### OreJob `_tunnelToPos` — re-digging same block (BUG FIX)
+- **Bug**: bot dug the same block repeatedly without moving; couldn't descend when target was below
+- **Fix**: stuck detection (3 steps <0.3 blocks → force jump+forward); vertical mode separated (`dy<-1.5` → dig floor + gravity; `dy>1.5` → dig ceiling + jump); `forward` time 250→350ms
 
-### HomeBaseSystem — навигация домой
-- `executeRoundTrip()` работает безупречно — навигация домой, депозит в сундук, крафт кирки
+### HomeBaseSystem
+- `executeRoundTrip()` working correctly — navigate home, deposit to chest, craft pickaxe
 
 ---
 
 ## [2026-05-17] - Army Bot System
 
 ### Army Bot (`sex_army_test.js`)
-- **20 ботов** (`Beer_1`–`Beer_20`) с автозапуском через `start_army.bat`
-- **mineflayer-pvp** интегрирован — реальная боёвка с кулдауном и преследованием
-- **`guard`** — охраняет позицию, атакует мобов в радиусе 10 блоков, возвращается на точку после боя
-- **`attack nearest`** — каждый бот находит ближайшего враждебного моба и атакует
-- **`escort`** — следует за командиром и атакует мобов по дороге
-- **`stopAll`** — останавливает pvp + pathfinder одновременно
-- **Построения** (`line`, `column`, `circle`, `square`) — после прихода на точку все смотрят в сторону командира
-- **Колонна по двое** — `column` формирует 2-wide march за командиром
-- **Per-bot offset** — боты не стакаются при `come`/`follow`/`guard`
-- **`guard` запоминает позицию** — возврат на точку если отошёл дальше 5 блоков
-- **Команды по диапазону** — `!squad#1-10 guard`, `!squad#5 come`
-- **Lookahead построений** — поворот головы в направлении командира после прихода
+- **20 bots** (`Beer_1`–`Beer_20`) with auto-launch via `start_army.bat`
+- **mineflayer-pvp** integrated — real combat with cooldown and pursuit
+- **`guard`** — guards position, attacks mobs in 10-block radius, returns after combat
+- **`attack nearest`** — each bot finds and attacks nearest hostile mob
+- **`escort`** — follows commander, attacks mobs en route
+- **`stopAll`** — stops pvp + pathfinder simultaneously
+- **Formations** (`line`, `column`, `circle`, `square`) — face commander direction after arriving
+- **Column of two** — `column` forms 2-wide march behind commander
+- **Per-bot offset** — bots don't stack on `come`/`follow`/`guard`
+- **`guard` remembers position** — returns to point if moved >5 blocks
+- **Range commands** — `!squad#1-10 guard`, `!squad#5 come`
+- **Formation lookahead** — turns head toward commander after arriving
 
-### Автовыдача снаряги (`give_gear.js`)
-- **HomeBot** (оп) раздаёт снарягу 20 ботам автоматически
-- Keepalive через `bot.look` — не вылетает за таймаут при 360 командах
-- 700мс между командами — обход rate-limit сервера
-- После `Done!` автоматически пишет `!squad gear` в чат
-- Убран `potion_of_healing` — не работает в ванилле без NBT
+### Auto gear distribution (`give_gear.js`)
+- **HomeBot** (op) distributes gear to 20 bots automatically
+- Keepalive via `bot.look` — no timeout with 360 commands
+- 700ms between commands — server rate-limit bypass
+- After `Done!` auto-sends `!squad gear` in chat
+- Removed `potion_of_healing` — doesn't work in vanilla without NBT
 
-### Автоматизация (`start_army.bat`)
-- Запускает армию, ждёт 70 сек, запускает `give_gear.js` автоматически
-- Полный цикл одним кликом
+### Automation (`start_army.bat`)
+- Launches army, waits 70s, launches `give_gear.js` automatically
+- Full cycle in one click
 
-### Конфиг снаряги (`gear_config.js`)
-- 10 арбалетчиков (Beer_1-10): crossbow, arrow×128, shield, iron armor
-- 10 копейщиков (Beer_11-20): iron_sword, shield, arrow×16, iron armor
-- Общий набор: cooked_beef×64, torch×16
+### Gear config (`gear_config.js`)
+- 10 crossbowmen (Beer_1-10): crossbow, arrow×128, shield, iron armor
+- 10 swordsmen (Beer_11-20): iron_sword, shield, arrow×16, iron armor
+- Shared kit: cooked_beef×64, torch×16
 
 ---
 
