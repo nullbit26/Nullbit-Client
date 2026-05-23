@@ -1,4 +1,4 @@
-name: Build & Release Launcher
+name: Build & Release Bot
 
 on:
   push:
@@ -16,37 +16,28 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: Install dependencies
         run: npm install
-        working-directory: NULLBIT/core
 
-      - name: Build
+      - name: Build AIBot.exe
         run: npm run build
-        working-directory: NULLBIT/core
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Create GitHub Release and upload assets
+      - name: Create GitHub Release and upload AIBot.exe
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           TAG=${GITHUB_REF_NAME}
-          VERSION=${TAG#v}
 
-          # Create release (ignore error if already exists)
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
             --notes "Release $TAG" \
             --latest || true
 
-          # Upload assets
           gh release upload "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber \
-            "NULLBIT/dist/NULLBIT Launcher Setup ${VERSION}.exe" \
-            "NULLBIT/dist/NULLBIT Launcher Setup ${VERSION}.exe.blockmap" \
-            "NULLBIT/dist/latest.yml"
+            "Release/AIBot.exe"
