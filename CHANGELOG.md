@@ -2,6 +2,36 @@
 
 All notable changes to the AI Bot project.
 
+## [2026-05-23] - Bot v1.0.15 / Launcher v3.0.23
+
+### Bot v1.0.15
+- **fix**: Wire `TacticalDecisionEngine` into `BotBrain` — was never initialized, causing all diagnostics panels (scores/combat/watchdog) to stay OFFLINE
+
+### Bot v1.0.14
+- **feat**: `AutoGearSystem` — auto-equips best available armor (helmet/chestplate/leggings/boots) on spawn and after respawn (1.2s delay)
+- **feat**: `RespawnRecoverySystem` — records death position, navigates back to drop after respawn (30s timeout, aborts on COMBAT/FLEE)
+- **feat**: `AntiDrownSystem` — monitors air supply every 2 ticks, auto-surfaces when air < 10 by holding jump
+- **feat**: Auto-enable `SurvivalSystem` (auto-eat) on every `brain.init()` — no longer requires explicit command
+- **feat**: `TacticalDecisionEngine` — added `combat` telemetry (mode, targetDist, weapon, status) every 2s and `watchdog` telemetry every 3s so all launcher diagnostics panels update in real time
+- **fix**: `TacticalDecisionEngine` — use `nearestThreatDistance` (correct field) instead of `nearestThreat.position` (non-existent)
+
+### Launcher v3.0.23
+- **feat**: Cyberpunk glitch banner animation on show (`bannerGlitchIn` — clip-path reveal, scaleY bounce, hue-rotate flash, 0.45s)
+- **feat**: Cyberpunk glitch banner animation on dismiss (`bannerGlitchOut` — X-split, scaleY collapse, brightness flash, 0.35s)
+- **feat**: Chromatic aberration `::after` overlay on banner edges (red/cyan)
+- **feat**: Animated progress bar — dark body with `cyberBarShift` gradient, gold spark `cyberSpark` sweeping left→right
+- **fix**: Remove duplicate `downloadFile` function — bot update now downloads reliably on first attempt
+
+### Launcher v3.0.22
+- **fix**: `installBotUpdateInline` — use `launcher.onUpdateProgress` instead of non-existent `launcher.on` — progress bar now updates correctly
+
+### Launcher v3.0.21
+- **fix**: Update banner — hide launcher row when only bot update is available
+- **fix**: Version string formatting — remove redundant `v` prefix
+- **fix**: Reset banner rows visibility on dismiss
+
+---
+
 ## [2026-05-23] - v3.0.20 - NULLBIT Launcher: Premium UI Polish
 
 ### NULLBIT Launcher v3.0.20

@@ -13,8 +13,30 @@ Autonomous Minecraft bot with AI-driven decision making for resource gathering, 
 - **Follow/Guard**: Escort and protect player
 
 ### Recent Enhancements (2026-05)
+
+#### Bot v1.0.15
+- **TacticalDecisionEngine wired** — fixed: was never initialized in BotBrain, all diagnostics now live
+
+#### Bot v1.0.14
+- **AutoGearSystem** — auto-equips best armor on spawn/respawn
+- **RespawnRecoverySystem** — navigates back to death drop after respawn
+- **AntiDrownSystem** — auto-surfaces when air < 10, checks every 2 ticks
+- **Auto-eat always on** — SurvivalSystem activates automatically on brain init
+- **Full diagnostics telemetry** — `combat` (2s) and `watchdog` (3s) JSON added to `TacticalDecisionEngine`
+
+#### Launcher v3.0.23
+- **Cyberpunk glitch animations** — banner appears/dismisses with clip-path glitch + chromatic aberration
+- **Animated progress bar** — dark shimmer body + gold spark sweep
+- **Fixed bot update download** — removed duplicate `downloadFile` causing install failures
+
+#### Launcher v3.0.22 / v3.0.21
+- Fixed update progress bar (wrong IPC listener)
+- Fixed banner showing launcher row without launcher update
+- Fixed version string formatting
+
+#### Earlier (v3.0.20 and below)
 - **Premium UI v3.0.20**: Heat gradient tuning sliders, logo glitch boot animation, EN localization in Advanced tab
-- **DIAGNOSTICS Telemetry (v3.0.4)**: Real-time JSON output for NULLBIT Launcher
+- **DIAGNOSTICS Telemetry**: Real-time JSON output for NULLBIT Launcher
   - Combat telemetry: mode, target distance, weapon, last action
   - Watchdog status: lock holder, path status, deadlock detection
   - Resource stats: trees chopped, ores mined, tunnel fallbacks
@@ -24,10 +46,7 @@ Autonomous Minecraft bot with AI-driven decision making for resource gathering, 
 - **CavePersistence**: Saves visited caves state across bot restarts (TTL 25 min)
 - **GlobalWatchdog**: Global deadlock detector — resets bot after 30–90s of no movement
 - **CombatSession v2.0**: Full FSM rewrite — ranged volley, crit attack, totem auto-equip, strafing
-- **PvP Mode overhaul**: Auto-equip best gear, improved heal priorities, smart shield handling
 - **Flee Logic Overhaul**: Fixed eternal BREAK_CONTACT, live threat distances, tuned thresholds
-- **HomeBaseSystem**: Fixed infinite partial-loop navigation, multi-chest support
-- **Army Bot System**: 20-bot squad with combat, formations, gear distribution
 
 ## Quick Start
 
