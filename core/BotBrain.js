@@ -24,6 +24,9 @@ const { CombatSystem } = require('../systems/CombatSystem')
 const { DefendSystem } = require('../systems/DefendSystem')
 const { RecoverySystem } = require('../systems/RecoverySystem')
 const { SurvivalSystem } = require('../systems/SurvivalSystem')
+const { AutoGearSystem } = require('../systems/AutoGearSystem')
+const { RespawnRecoverySystem } = require('../systems/RespawnRecoverySystem')
+const { AntiDrownSystem } = require('../systems/AntiDrownSystem')
 
 /**
  * Central orchestrator: EventBus, StateManager, Scheduler, VoiceSystem, NavigationController,
@@ -112,6 +115,12 @@ class BotBrain {
     this.defendSystem = null
     /** @readonly @type {SurvivalSystem | null} */
     this.survivalSystem = null
+    /** @readonly @type {AutoGearSystem | null} */
+    this.autoGearSystem = null
+    /** @readonly @type {RespawnRecoverySystem | null} */
+    this.respawnRecoverySystem = null
+    /** @readonly @type {AntiDrownSystem | null} */
+    this.antiDrownSystem = null
 
     /** @readonly @type {RecoverySystem | null} */
     this.recoverySystem = null
@@ -206,12 +215,21 @@ class BotBrain {
     this.defendSystem = new DefendSystem({ brain: this, defend: ctx.defend })
     this.survivalSystem?.destroy?.()
     this.survivalSystem = new SurvivalSystem({ bot: ctx.bot, brain: this, config: ctx.config })
+    this.autoGearSystem?.destroy?.()
+    this.autoGearSystem = new AutoGearSystem({ bot: ctx.bot, brain: this })
+    this.respawnRecoverySystem?.destroy?.()
+    this.respawnRecoverySystem = new RespawnRecoverySystem({ bot: ctx.bot, brain: this })
+    this.antiDrownSystem?.destroy?.()
+    this.antiDrownSystem = new AntiDrownSystem({ bot: ctx.bot, brain: this })
     if (this._initialized) {
       this.defendSystem.init()
       this.followSystem.init()
       this.combatSystem.init()
       this.recoverySystem.init()
       this.survivalSystem.init()
+      this.autoGearSystem.init()
+      this.respawnRecoverySystem.init()
+      this.antiDrownSystem.init()
     }
   }
 
@@ -348,6 +366,11 @@ class BotBrain {
     this.followSystem?.init?.()
     this.combatSystem?.init?.()
     this.survivalSystem?.init?.()
+    this.autoGearSystem?.init?.()
+    this.respawnRecoverySystem?.init?.()
+    this.antiDrownSystem?.init?.()
+    // Auto-enable survival (eat) on every init — bot should always eat when safe
+    this.eventBus.emit(SurvivalEvents.SET_SURVIVAL, { at: Date.now(), source: 'auto' })
     this.log.info('initialized')
     this.eventBus.emit(CoreEvents.BRAIN_READY, { at: Date.now() })
   }
@@ -367,6 +390,9 @@ class BotBrain {
       this.log.detachEventBus()
     }
     this.partyIFF?.destroy?.()
+    this.antiDrownSystem?.destroy?.()
+    this.respawnRecoverySystem?.destroy?.()
+    this.autoGearSystem?.destroy?.()
     this.survivalSystem?.destroy?.()
     this.combatSystem?.destroy?.()
     this.followSystem?.destroy?.()

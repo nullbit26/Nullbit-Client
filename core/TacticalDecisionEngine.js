@@ -35,6 +35,8 @@ class TacticalDecisionEngine {
     this._prevSnapshot = null
     this._lastScoreOutput = 0 // Throttle score output
     this._lastInvOutput = 0  // Throttle inventory output
+    this._lastCombatOutput = 0 // Throttle combat output
+    this._lastWatchdogOutput = 0 // Throttle watchdog output
   }
 
   init () {
@@ -88,7 +90,7 @@ class TacticalDecisionEngine {
         this._lastInvOutput = now
         const inv = this._bot.inventory
         const usedSlots = inv?.slots?.filter(i => i).length || 0
-        const totalSlots = 36 // Standard player inventory
+        const totalSlots = 36
         const freeSlots = totalSlots - usedSlots
         console.log(JSON.stringify({
           type: 'inv',
@@ -96,6 +98,42 @@ class TacticalDecisionEngine {
           freeSlots,
           usedSlots,
           totalSlots
+        }))
+      }
+
+      // Output combat telemetry (throttled: once per 2 seconds)
+      if (now - this._lastCombatOutput > 2000) {
+        this._lastCombatOutput = now
+        const coreState = ctx.coreState || 'IDLE'
+        const isCombat = ctx.combatSessionActive || coreState === 'COMBAT' || coreState === 'FLEE'
+        const targetDist = ctx.nearestThreatDistance != null
+          ? Math.round(ctx.nearestThreatDistance * 10) / 10
+          : null
+        const heldItem = this._bot?.heldItem
+        const weapon = heldItem ? heldItem.name : 'fist'
+        const hp = ctx.hp ?? 0
+        console.log(JSON.stringify({
+          type: 'combat',
+          mode: isCombat ? coreState : 'IDLE',
+          targetDist: targetDist,
+          weapon: weapon,
+          lastAction: isCombat ? coreState : '—',
+          status: isCombat ? 'ACTIVE' : (hp < 5 ? 'CRITICAL' : 'STANDBY')
+        }))
+      }
+
+      // Output watchdog telemetry (throttled: once per 3 seconds)
+      if (now - this._lastWatchdogOutput > 3000) {
+        this._lastWatchdogOutput = now
+        const coreState = ctx.coreState || 'IDLE'
+        const taskKind = (typeof ctx.currentTask === 'string' ? ctx.currentTask : ctx.currentTask?.kind || ctx.currentTask?.type || 'NONE')
+        const isExempt = this._brain?.watchdogExempt || false
+        console.log(JSON.stringify({
+          type: 'watchdog',
+          lastCheck: new Date().toLocaleTimeString(),
+          lockHolder: isExempt ? taskKind : (taskKind || 'NONE'),
+          pathStatus: 'ok',
+          status: isExempt ? 'EXEMPT' : (coreState === 'IDLE' ? 'STANDBY' : 'ACTIVE')
         }))
       }
     } catch (err) {
