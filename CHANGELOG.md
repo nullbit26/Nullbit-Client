@@ -2,6 +2,35 @@
 
 All notable changes to the AI Bot project.
 
+## [2026-05-24] - Launcher v3.0.24
+
+### Launcher v3.0.24
+
+#### Status Bar — Inline Launch Status
+- **feat**: Removed separate bot status panel — status is now inline in `launch-row` next to LAUNCH BOT button
+- **feat**: INV display replaced with ASCII segments (`▰▰▰▱▱▱▱▱▱▱▱▱`) — 12 blocks, each = 3 slots, turns red >75%, pulses >90%
+- **feat**: HP and FOOD values shown inline with color-coded HP (green/amber/red) and critical pulse animation
+- **feat**: STATE badge (`IDLE`/`GATHERING`/`COMBAT`/`FLEE`/`FOLLOWING`) on second row with cyberpunk glow animations per state
+- **feat**: Status bar hidden when bot is OFFLINE — no empty fields shown to user
+- **feat**: Boot sequence — bar appears 2s after bot process confirmed started (after main glitch flash settles)
+- **feat**: Appear animation — blur→brightness→clear fade-in (0.6s), mirrors shutdown animation
+- **feat**: Shutdown animation — brightness→blur→hidden fade-out (0.6s), synced with other stop animations
+- **feat**: Animated dots `·` → `··` → `···` (amber color) appear 1s after panel, persist until real telemetry arrives
+- **feat**: HP/FOOD fields have fixed `min-width` — layout does not shift during dots animation
+- **fix**: `btn-launch` gets `min-width: 180px` and `flex-shrink: 0` — status row doesn't shift on button text change
+
+#### Window
+- **feat**: Default window size increased to `1240×800` (was `1100×720`)
+- **feat**: `minWidth: 1240` / `minHeight: 800` — window cannot be resized below default
+- **feat**: Maximize/Restore button (`□`) added to titlebar — blue hover, calls `window-maximize` IPC
+- **fix**: All titlebar buttons (`─`, `□`, `✕`) now equal `28×28px` with flex-centered icons
+
+#### Titlebar
+- **feat**: `launcher.maximize()` added to preload IPC bridge
+- **feat**: `ipcMain.on('window-maximize')` — toggles maximize/restore in main process
+
+---
+
 ## [2026-05-23] - Bot v1.0.15 / Launcher v3.0.23
 
 ### Bot v1.0.15

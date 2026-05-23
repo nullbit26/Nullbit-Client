@@ -14,6 +14,14 @@ Autonomous Minecraft bot with AI-driven decision making for resource gathering, 
 
 ### Recent Enhancements (2026-05)
 
+#### Launcher v3.0.24
+- **Inline status bar** — INV/HP/FOOD/STATE now inline next to LAUNCH BOT button, no separate panel
+- **ASCII INV segments** — `▰▰▰▱▱▱▱▱▱▱▱▱` 12-block bar, turns red >75%, pulses >90%
+- **Boot animation sequence** — bar appears 2s after bot starts, blur→fade-in, amber dots until telemetry arrives
+- **Shutdown animation** — brightness→blur fade-out (0.6s) synced with other stop effects
+- **Maximize button** — `□` in titlebar, toggles fullscreen/restore
+- **Window locked** — default `1240×800`, cannot be resized smaller
+
 #### Bot v1.0.15
 - **TacticalDecisionEngine wired** — fixed: was never initialized in BotBrain, all diagnostics now live
 
