@@ -334,6 +334,16 @@ _failedBlocks: Map<blockKey, timestamp>
 
 See `CHANGELOG.md` for detailed list.
 
+### 2026-05-23 — v3.0.20 Launcher UI Polish
+1. **Heat gradient sliders** — `_tuningHeatUpdate(id, v)`: value 1–3=cyan, 4–6=yellow, 7–9=orange, 10=red; applied to fill track, value text, and glow. Called in `onTuningChange`, `_setTuningSlider`, and init.
+2. **OVERDRIVE / MINIMUM badge** — `.tuning-extreme-badge` appears on value=10/1; glitch CSS animation; positioned absolute in `.tuning-header` to avoid layout shift.
+3. **Inverted TUNING_MAP lerp** — SURVIVAL, GATHER SAFETY, MOBILITY: slider 1=safe/slow params, slider 10=risky/fast params. `_syncTuningFromAdvanced` reverse lerp updated accordingly.
+4. **MOBILITY clamp** — `pathThinkTimeoutMs` max: `40000` → `20000` to prevent bot hangs at slider=1.
+5. **Logo boot sequence** — `_triggerLogoState(running)`: offline=dark `opacity:0.18`; start=`logo-boot` 900ms chromatic aberration glitch (`steps(1)`, red/cyan `drop-shadow` split, `scaleX` jitter) → `logo-online` 400ms white flash → `logo-active` persistent `logoGlow`; stop=`logo-offline` 1.4s fade to dark.
+6. **Diagnostics badge system** — `.diag-status.stuck` = red pulse `diagStuckPulse`; `.diag-status.standby` = `#00c8ff` cyan; `#diag-error-count[data-count="0"]` = grey, turns red on first error.
+7. **Advanced hints EN** — all 27 `neural-hint` spans translated from Russian to English in `index.html`.
+8. **`.neural-hint` readability** — `9px / opacity:0.6 / color:var(--text-dim)` → `10px / opacity:0.5 / color:var(--text)`.
+
 ### 2026-05-23 — NEURAL Tab + Hot-Reload
 1. **NEURAL tab** (Launcher) — `NULLBIT/renderer/index.html`, `app.js`, `style.css`: new sub-item under CORE ACCESS; 5 parameter groups (COMBAT FLEE, PVP, NAVIGATION, MINING, AI); `saveNeuralConfig()` writes to `config.json → neural`; `loadConfigUI()` reads and populates fields
 2. **ConfigManager hot-reload** — `config/ConfigManager.js`: added `applyNeuralOverrides(neural, target)` with min/max clamping; added `watchNeural(configPath, liveConfig, log)` — `fs.watch` + 300ms debounce + in-place `Object.assign` on live `config`

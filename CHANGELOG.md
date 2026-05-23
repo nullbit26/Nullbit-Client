@@ -2,6 +2,47 @@
 
 All notable changes to the AI Bot project.
 
+## [2026-05-23] - v3.0.20 - NULLBIT Launcher: Premium UI Polish
+
+### NULLBIT Launcher v3.0.20
+
+#### Tuning Panel — Heat Gradient Sliders
+- **Heat color system** (`_tuningHeatUpdate`): slider fill, value text and glow change color based on value — cyan (1–3) → yellow (4–6) → orange (7–9) → red (10)
+- **OVERDRIVE / MINIMUM badge**: glitch-animated badge appears at slider extremes (value=1 or 10), positioned absolutely to avoid layout shift
+- **Smooth CSS transitions** on `.tuning-fill` and `.tuning-val` — no abrupt color jumps
+- **Preset heat fix**: `_setTuningSlider` now calls `_tuningHeatUpdate` so colors update when loading presets
+- **Inverted lerp mappings** for SURVIVAL, GATHER SAFETY, MOBILITY: low value = safe/cautious (left), high value = risky/aggressive (right)
+- **`_syncTuningFromAdvanced`** — reverse lerp fixed to match inverted ranges
+- **MOBILITY clamp**: `pathThinkTimeoutMs` max reduced 40000ms → 20000ms to prevent bot hangs
+
+#### Sidebar Logo — Boot Animation
+- **Offline state**: logo is dark (`opacity: 0.18`) when bot is stopped — "dead system" aesthetic
+- **Boot sequence**: on bot start — 900ms chromatic aberration glitch (red/cyan split, `scaleX` jitter, `steps(1)` hard frames) → 400ms white flash → stable `logoGlow` pulse
+- **Online state** (`logo-active`): persistent slow glow animation while bot is running
+- **Stop sequence** (`logo-offline`): 1.4s fade-out back to dark
+- **`_triggerLogoState(running)`**: new JS function wired into `setBotRunning`
+
+#### Diagnostics — Status Badge Colors
+- **STUCK**: red with 1s pulse animation (`diagStuckPulse`) — critical visual alert
+- **STANDBY**: cyan (`#00c8ff`) — ready but not active, distinct from IDLE yellow
+- **IDLE**: yellow (unchanged)
+- **ACTIVE / LIVE**: green (unchanged)
+- **OFFLINE**: grey (unchanged)
+
+#### Critical Events Counter
+- Counter `#diag-error-count` now grey at `data-count="0"`, turns red only when errors exist
+- `data-count` attribute set programmatically in `addGlitchLog()` for CSS targeting
+- Fixed CSS override that kept counter grey regardless of count
+
+#### Advanced Tab — Localization
+- All Russian `neural-hint` descriptions replaced with English equivalents (27 strings)
+- `.neural-hint` font: `9px opacity:0.6` → `10px color:var(--text) opacity:0.5` — readable on dark background
+
+#### Version
+- Launcher: `3.0.19` → `3.0.20`
+
+---
+
 ## [2026-05-22] - v3.0.4 - Advanced Telemetry & Diagnostics
 
 ### NULLBIT Launcher v3.0.4

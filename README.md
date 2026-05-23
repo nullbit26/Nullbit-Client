@@ -13,6 +13,7 @@ Autonomous Minecraft bot with AI-driven decision making for resource gathering, 
 - **Follow/Guard**: Escort and protect player
 
 ### Recent Enhancements (2026-05)
+- **Premium UI v3.0.20**: Heat gradient tuning sliders, logo glitch boot animation, EN localization in Advanced tab
 - **DIAGNOSTICS Telemetry (v3.0.4)**: Real-time JSON output for NULLBIT Launcher
   - Combat telemetry: mode, target distance, weapon, last action
   - Watchdog status: lock holder, path status, deadlock detection
@@ -183,6 +184,13 @@ Private project — not for public distribution.
 ## Recent Changes
 
 See [CHANGELOG.md](CHANGELOG.md) for full details.
+
+### 2026-05-23: v3.0.20 — Premium Launcher UI
+1. **Heat gradient sliders** — `_tuningHeatUpdate`: cyan→yellow→orange→red based on value; OVERDRIVE/MINIMUM glitch badge at extremes
+2. **Inverted TUNING mappings** — SURVIVAL, GATHER SAFETY, MOBILITY: low=safe/slow, high=risky/fast
+3. **Logo boot animation** — dark offline, 900ms chromatic aberration glitch on start, white flash, stable glow while running
+4. **Diagnostics badge colors** — STUCK=red pulse, STANDBY=cyan, error counter grey at 0 / red when errors
+5. **Advanced tab EN** — all 27 Russian `neural-hint` strings replaced with English
 
 ### 2026-05-21: BranchMineJob, InventoryManager, CavePersistence, TacticalDecisionEngine
 1. **BranchMineJob** — branch mining at optimal Y-levels (`diamond:-58`, `iron:16`, etc.) with FSM
