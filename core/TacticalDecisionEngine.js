@@ -37,6 +37,7 @@ class TacticalDecisionEngine {
     this._lastInvOutput = 0  // Throttle inventory output
     this._lastCombatOutput = 0 // Throttle combat output
     this._lastWatchdogOutput = 0 // Throttle watchdog output
+    this._lastStatusOutput = 0 // Throttle status output
   }
 
   init () {
@@ -98,6 +99,22 @@ class TacticalDecisionEngine {
           freeSlots,
           usedSlots,
           totalSlots
+        }))
+      }
+
+      // Output bot status telemetry (throttled: once per 2 seconds)
+      if (now - this._lastStatusOutput > 2000) {
+        this._lastStatusOutput = now
+        const hp    = Math.round((ctx.hp ?? 0) * 10) / 10
+        const maxHp = Math.round((ctx.maxHp ?? 20) * 10) / 10
+        const food  = Math.round((this._bot?.food ?? 0) * 10) / 10
+        const coreState = ctx.coreState || 'IDLE'
+        console.log(JSON.stringify({
+          type: 'status',
+          hp,
+          maxHp,
+          food,
+          state: coreState
         }))
       }
 
