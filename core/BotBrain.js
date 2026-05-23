@@ -27,6 +27,7 @@ const { SurvivalSystem } = require('../systems/SurvivalSystem')
 const { AutoGearSystem } = require('../systems/AutoGearSystem')
 const { RespawnRecoverySystem } = require('../systems/RespawnRecoverySystem')
 const { AntiDrownSystem } = require('../systems/AntiDrownSystem')
+const { TacticalDecisionEngine } = require('./TacticalDecisionEngine')
 
 /**
  * Central orchestrator: EventBus, StateManager, Scheduler, VoiceSystem, NavigationController,
@@ -121,6 +122,9 @@ class BotBrain {
     this.respawnRecoverySystem = null
     /** @readonly @type {AntiDrownSystem | null} */
     this.antiDrownSystem = null
+    /** @readonly @type {TacticalDecisionEngine | null} */
+    this.tacticalEngine = null
+    this.decisionContext = null
 
     /** @readonly @type {RecoverySystem | null} */
     this.recoverySystem = null
@@ -221,6 +225,8 @@ class BotBrain {
     this.respawnRecoverySystem = new RespawnRecoverySystem({ bot: ctx.bot, brain: this })
     this.antiDrownSystem?.destroy?.()
     this.antiDrownSystem = new AntiDrownSystem({ bot: ctx.bot, brain: this })
+    this.tacticalEngine?.destroy?.()
+    this.tacticalEngine = new TacticalDecisionEngine({ bot: ctx.bot, brain: this, config: ctx.config })
     if (this._initialized) {
       this.defendSystem.init()
       this.followSystem.init()
@@ -230,6 +236,7 @@ class BotBrain {
       this.autoGearSystem.init()
       this.respawnRecoverySystem.init()
       this.antiDrownSystem.init()
+      this.tacticalEngine.init()
     }
   }
 
@@ -369,6 +376,7 @@ class BotBrain {
     this.autoGearSystem?.init?.()
     this.respawnRecoverySystem?.init?.()
     this.antiDrownSystem?.init?.()
+    this.tacticalEngine?.init?.()
     // Auto-enable survival (eat) on every init — bot should always eat when safe
     this.eventBus.emit(SurvivalEvents.SET_SURVIVAL, { at: Date.now(), source: 'auto' })
     this.log.info('initialized')
@@ -390,6 +398,7 @@ class BotBrain {
       this.log.detachEventBus()
     }
     this.partyIFF?.destroy?.()
+    this.tacticalEngine?.destroy?.()
     this.antiDrownSystem?.destroy?.()
     this.respawnRecoverySystem?.destroy?.()
     this.autoGearSystem?.destroy?.()
