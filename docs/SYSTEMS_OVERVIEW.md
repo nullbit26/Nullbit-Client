@@ -146,10 +146,41 @@ Event-driven architecture with clear separation of concerns:
 - **File**: `systems/SurvivalSystem.js`
 - **Purpose**: Persistent autonomous survival mode
 - **Features**:
-  - Auto-eat when hungry
+  - Auto-eat when hungry (food < `survivalEatBelowFood`, default 18)
+  - **Auto-activated** on every `brain.init()` — no command needed
   - Activated via `SurvivalEvents.SET_SURVIVAL`
   - **Phase 3**: reads `brain.decisionContext` instead of calling `evaluateThreatPressure()` directly — skips tick if context not ready
 - **Note**: Separate from RecoveryHold; not used by gather operations
+
+### 16. AutoGearSystem
+- **File**: `systems/AutoGearSystem.js`
+- **Purpose**: Automatically equip best available armor on spawn and after respawn
+- **Features**:
+  - Checks all 4 slots: head, torso, legs, feet
+  - Tier ranking: netherite → diamond → iron → chainmail → golden → leather
+  - Skips slot if already wearing equal or better tier
+  - On `spawn` event: 1.2s delay then equips (waits for inventory load)
+  - Equips immediately on `init()`
+
+### 17. RespawnRecoverySystem
+- **File**: `systems/RespawnRecoverySystem.js`
+- **Purpose**: Navigate back to death location after respawn to recover dropped items
+- **Features**:
+  - Records `bot.entity.position` on `death` event
+  - On next `spawn`: waits 2s then navigates to death point via `GoalNear(radius=2)`
+  - Aborts if bot enters `COMBAT` or `FLEE` state
+  - Timeout: 30s — gives up and clears death position
+  - Does not re-attempt if recovery already in progress
+
+### 18. AntiDrownSystem
+- **File**: `systems/AntiDrownSystem.js`
+- **Purpose**: Prevent bot from drowning by auto-surfacing when air runs low
+- **Features**:
+  - Polls every 2 physics ticks via `Scheduler`
+  - Triggers when `oxygenLevel < 10` (max 20) and bot is submerged
+  - Stops pathfinder goal, holds jump every 300ms to swim up
+  - Releases when bot exits water or air ≥ 18
+  - Logs `[AntiDrown] Low air — surfacing` / `Air restored`
 
 ### 11. TacticalDecisionEngine (Phase 3)
 - **File**: `core/TacticalDecisionEngine.js`
@@ -164,6 +195,11 @@ Event-driven architecture with clear separation of concerns:
   - `survivalScore` — `hpScore + foodScore×0.4`
   - `resourceScore` — `0` without task; `0.5..1.0` based on `currentTask + inventoryFillRatio + inventoryValueScore`
 - **Init last, destroy first** in `BotBrain`
+- **Telemetry JSON output** (stdout → NULLBIT Launcher):
+  - `type:'scores'` — threatScore, survivalScore, resourceScore every 2s
+  - `type:'combat'` — mode, targetDist, weapon, lastAction, status every 2s
+  - `type:'watchdog'` — lastCheck, lockHolder, pathStatus, status every 3s
+  - `type:'inv'` — fillRatio, freeSlots, usedSlots, totalSlots every 5s
 
 ### 14. BranchMineJob
 - **File**: `systems/BranchMineJob.js`
