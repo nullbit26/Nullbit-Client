@@ -262,5 +262,5 @@ PF_V3_GAME_MODE=survival
 
 **Maintainer Note:** This document should be updated after every major feature completion or phase transition.
 
-**Last Verified By:** Peoject Lead  
+**Last Verified By:** Project Lead  
 **Verification Date:** May 29, 2026, 02:41 UTC+2
