@@ -14,7 +14,7 @@ Autonomous Minecraft bot with AI-driven decision making for resource gathering, 
 
 ### Recent Enhancements (2026-05)
 
-#### Bot v1.0.19 (2026-05-29) — MAJOR UPDATE
+#### Bot v1.1.19 (2026-05-29) — MAJOR UPDATE
 - **MovementController v1.0** — Centralized movement arbitration with priority queue (5 levels: CRITICAL → IDLE)
   - 7 systems integrated: AntiDrown, PvPMode, RespawnRecovery, Combat, OreJob, HomeBase, Follow
   - Emergency Stop API with 2-second cooldown
