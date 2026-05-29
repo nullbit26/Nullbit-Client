@@ -97,13 +97,10 @@ npm start
 - **InventoryManager**: Junk auto-drop during expeditions
 - **CavePersistence**: Persists visited cave state across restarts
 
-### Army Bot System (`sex_army_test.js`)
-- **20 soldier bots** (`Beer_1`–`Beer_20`) spawned with staggered 1.5s delay
+### Squad System (`squad_test.js`)
+- **20 bots** (`Bot_1`–`Bot_20`) spawned with staggered 1.5s delay
 - **mineflayer-pvp**: Real combat with attack cooldown and target pursuit
 - **mineflayer-pathfinder**: Formation navigation and follow
-- **gear_config.js**: Role-based gear (crossbowmen / spearmen)
-- **give_gear.js**: HomeBot (op) auto-distributes gear to all bots
-- **start_army.bat**: One-click full startup → spawn → gear → equip
 
 ### Event-Driven Design
 All systems communicate via EventBus:
