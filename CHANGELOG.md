@@ -2,6 +2,447 @@
 
 All notable changes to the AI Bot project.
 
+## [2026-05-29] - MovementController + AI Integration ✅
+
+### Phase 4: MovementController Production Ready
+**Status:** PRODUCTION READY — Centralized Movement Arbitration
+
+#### MovementController Core
+- **feat**: Priority-based movement queue (5 levels: CRITICAL → IDLE)
+- **feat**: 7 systems integrated: AntiDrown, PvPMode, RespawnRecovery, Combat, OreJob, HomeBase, Follow
+- **feat**: Preemption with graceful handoff
+- **feat**: Emergency Stop API
+- **feat**: Telemetry and monitoring
+- **test**: 122/122 tests passing (100%)
+- **test**: 5/5 live Minecraft tests passed
+- **perf**: <1ms per request
+
+#### Launcher UI Integration
+- **feat**: Real-time MovementController telemetry in DIAGNOSTICS tab
+- **feat**: Display: current owner, priority, held time, queue length
+- **feat**: Queue list visualization
+- **feat**: Emergency Stop button with 2-second cooldown
+- **feat**: IPC communication: bot → main.js → renderer
+
+#### AI-MovementController Integration (Phase 4.1)
+- **feat**: Assistant briefing includes MC context (owner, priority, queue)
+- **feat**: New AI tool: `setMovementStrategy` — AI can influence priorities
+- **feat**: Safety: AI capped at COMBAT (4), cannot override CRITICAL (5)
+- **implementation**: 2 hours (vs 5 days original plan)
+- **approach**: Extended existing AIIntentSystem (not standalone)
+- **test**: 5/5 integration tests passing
+
+#### Documentation
+- **docs**: PROJECT_STATUS.md — Complete project overview
+- **docs**: AI_MC_INTEGRATION.md — Integration details
+- **docs**: ANTISTUCK_V2.md — Production system docs
+- **docs**: BLOCK_CLASSIFIER.md — Production system docs
+- **docs**: STRUCTURE_DETECTOR.md — Production system docs
+- **docs**: INDEX.md — Navigation updated
+
+#### Files Changed
+- `core/MovementController.js` — Core implementation
+- `core/BotBrain.js` — Integration
+- `NULLBIT/core/main.js` — IPC handlers
+- `NULLBIT/renderer/index.html` — UI
+- `NULLBIT/renderer/app.js` — Frontend logic
+- `systems/AIIntentSystem.js` — AI tool added
+- `features/assistantBriefing.js` — MC context added
+
+---
+
+## [2026-05-28] - Phase 3 Semantic Layer 100% COMPLETE ✅
+
+### Semantic Layer & Route Optimizer (Bot v1.3.0)
+**Status:** PRODUCTION READY — Full Launcher UI Integration
+
+#### BlockClassifier - Semantic Block Understanding
+- **feat**: 10 block categories (SOLID, PASSABLE, HAZARD, LIQUID, BREAKABLE, VALUABLE, FUNCTIONAL, VEGETATION, STRUCTURE, TRANSPARENT)
+- **feat**: 43+ solid blocks, 9+ hazard blocks mapped with properties
+- **feat**: Pattern-based classification with confidence scoring
+- **perf**: 4ms for 1000 classifications
+- **test**: 26/26 tests passing (100%)
+
+#### StructureDetector - Building & Cave Recognition
+- **feat**: 5 structure types (BUILDING, CAVE, BRIDGE, ROAD, FARM)
+- **feat**: Advanced pattern recognition with geometric analysis
+- **feat**: Confidence scoring (0-1) and spatial analysis
+- **feat**: Cache management with 100 entry limit
+- **perf**: 0-1ms for 50 detections
+- **test**: 26/26 tests passing (100%)
+
+#### TerrainAnalyzer - Landscape Understanding
+- **feat**: 10 terrain types (PLAINS, FOREST, MOUNTAINS, DESERT, SWAMP, OCEAN, RIVER, CAVE, HILLS)
+- **feat**: Elevation and slope calculation
+- **feat**: Block distribution analysis with roughness metrics
+- **feat**: Pattern-based classification with confidence
+- **test**: 17/17 tests passing (100%)
+
+#### SemanticLayer - Orchestration Hub
+- **feat**: Integrates all 3 analyzers (Block, Structure, Terrain)
+- **feat**: Unified analysis API: analyzePosition(), analyzePath(), analyzeArea()
+- **feat**: Caching system with configurable TTL
+- **feat**: Performance statistics tracking
+- **feat**: Error handling with graceful degradation
+- **perf**: <10ms with cache, ~2-5ms analysis
+
+#### RouteOptimizer - Semantic-Aware Routing
+- **feat**: Waypoint generation with perpendicular offset strategies
+- **feat**: Route scoring: efficiency × safety with configurable weights
+- **feat**: Automatic short-circuit for short distances (<30 blocks)
+- **feat**: Multi-waypoint route evaluation
+- **feat**: Terrain preference integration (Plains 1.0 → Ocean 3.0)
+- **perf**: <5ms for typical distances
+- **test**: 12/12 tests passing (100%)
+
+#### PathfinderManager Integration
+- **feat**: Phase 3 initialization with V2.0 coexistence
+- **feat**: Semantic analysis methods exposed: analyzeArea(), getTerrainDifficulty(), assessPathHazards()
+- **feat**: Dynamic movement adjustments based on terrain roughness
+- **feat**: Complete Phase 3 statistics via getCompletePhase3Stats()
+- **test**: 15/15 integration tests passing
+
+#### Launcher UI v3.0.31 Integration
+- **feat**: 15 new controls in NEURAL → ADVANCED panel
+- **feat**: Semantic Layer: toggle, radius 8-20, cost multiplier, structure detection, hazard prediction
+- **feat**: Route Optimizer: toggle, max waypoints 2-8, safety/efficiency weights, min opt distance
+- **feat**: Terrain Preferences: per-biome routing (Plains 0.5-2.0 → Ocean 0.5-4.0)
+- **feat**: Real-time hot-reload (~300ms from save to active)
+- **feat**: Full config persistence in config.json
+
+#### Configuration System
+- **feat**: ConfigManager maps launcher settings to env vars
+- **feat**: config.js creates semanticLayer, routeOptimizer, terrainPreferences objects
+- **feat**: RouteOptimizer reads terrain preferences from config (not hardcoded)
+- **feat**: PathfinderManager passes terrainPreferences to RouteOptimizer
+
+#### Testing Summary
+- **test**: 89/89 Phase 3 tests passing (100% success rate)
+  - BlockClassifier: 26/26
+  - StructureDetector: 26/26
+  - TerrainAnalyzer: 17/17
+  - SemanticLayer: Core tested
+  - RouteOptimizer: 12/12
+  - PathfinderManager: 8/8
+- **test**: Launcher UI: 8/8 integration tests
+- **test**: Config system: Verified end-to-end
+
+#### Files Created
+- `navigation/BlockClassifier.js` (621 lines) — Block semantic analysis
+- `navigation/StructureDetector.js` (847 lines) — Structure recognition
+- `navigation/TerrainAnalyzer.js` (1051 lines) — Terrain classification
+- `navigation/SemanticLayer.js` (1121 lines) — Orchestration layer
+- `navigation/RouteOptimizer.js` (450+ lines) — Smart routing
+- `scripts/test-block-classifier.js` — Unit tests
+- `scripts/test-structure-detector.js` — Unit tests
+- `scripts/test-terrain-analyzer.js` — Unit tests
+- `scripts/test-route-optimizer.js` — Unit tests
+- `scripts/test-pathfinder-semantic-integration.js` — Integration tests
+- `scripts/test-pathfinder-route-optimizer.js` — Integration tests
+- `docs/LAUNCHER_UI_PHASE3_v3.0.31.md` — UI documentation
+
+#### Code Metrics
+- **Total Lines:** ~4850 lines of new code
+- **Test Coverage:** 100% (89/89 tests)
+- **Performance:** All components <10ms response time
+- **Integration:** Full Launcher UI → Bot real-time control
+
+---
+
+## [2026-05-26] - Phase 3 Probabilistic Risk Analysis COMPLETE ✅
+
+### Risk-Aware Pathfinding (Bot v1.2.5)
+**Status:** PRODUCTION READY — Risk Analysis & Decision Making
+
+#### RiskAnalyzer - Intelligent Risk Assessment
+- **feat**: Multi-factor risk calculation (environment, entities, weather, time)
+- **feat**: Risk categories: MINIMAL/LOW/MODERATE/HIGH/EXTREME (0-100 scale)
+- **feat**: Hazard detection: lava, cliffs, mobs, darkness, drowning
+- **feat**: Context-aware risk (health, armor, experience level)
+- **perf**: ~1-20ms per decision
+- **test**: 15 unit tests passing
+
+#### ValueAssessor - Goal Worth Evaluation
+- **feat**: Resource value mapping (diamonds 100pts, iron 30pts, etc.)
+- **feat**: Distance vs value trade-off analysis
+- **feat**: Time cost estimation
+- **feat**: Safety-adjusted value calculation
+- **test**: 12 unit tests passing
+
+#### DecisionTree - Smart Path Selection
+- **feat**: Risk/value comparison for multiple path options
+- **feat**: ACCEPT/REJECT/MITIGATE decisions
+- **feat**: Alternative path generation
+- **feat**: Decision confidence scoring
+- **test**: 16 integration tests passing
+
+#### RiskPathAdapter - Seamless Integration
+- **feat**: Adapts legacy pathfinder to use risk analysis
+- **feat**: Zero breaking changes
+- **feat**: Toggle ON/OFF via environment
+- **config**: `PF_V3_ENABLE_RISK`, `PF_V3_RISK_PROFILE`, `PF_V3_GAME_MODE`
+
+#### Commands Added
+- `risk` — Show current risk profile and statistics
+- `profile [conservative|balanced|aggressive|terminator]` — Switch risk profile
+- `analyze` — Semantic layer terrain analysis
+
+#### Testing Summary
+- **test**: 43/43 core tests passing (100%)
+- **test**: 7/7 integration tests passing
+- **live**: All commands verified working in Minecraft
+- **perf**: ~20ms total decision time
+
+#### Files Created
+- `risk/RiskAnalyzer.js` (388 lines)
+- `risk/ValueAssessor.js` (408 lines)
+- `risk/DecisionTree.js` (385 lines)
+- `risk/RiskPathAdapter.js` (399 lines)
+- `scripts/test-probabilistic-risk.js` (43 tests)
+
+---
+
+## [2026-05-25] - Pathfinder V2.0 Phase 2 COMPLETE ✅
+
+### Predictive Layer (Bot v1.2.0)
+**Status:** IMPLEMENTED - All Components Ready for Integration
+
+#### TerrainScanner - Advanced Terrain Analysis
+- **feat**: Ray casting with 15-20 block range (vs 8-12 in old system)
+- **feat**: Intelligent caching (TTL 5s) for performance
+- **feat**: Throttling (configurable ticks between scans)
+- **feat**: Terrain classification: narrow, tunnel, cave, bridge, open
+- **feat**: Hazard detection: lava, fire, cliffs, narrow passages
+- **feat**: Traversability scoring (0-1) for path segments
+- **feat**: Unified V2.0 logging format
+- **test**: 22 unit tests, 100% pass rate
+
+#### HazardPredictor - ML-Ready Prediction Engine
+- **feat**: Stuck probability calculation (narrow passage detection)
+- **feat**: Fall probability (cliff/edge detection)
+- **feat**: Damage probability (lava/fire detection)
+- **feat**: Confidence scoring (0-1 probability)
+- **feat**: Severity levels: low, medium, high, critical
+- **feat**: Prediction validation (true/false positive tracking)
+- **feat**: Calibration system for thresholds
+- **test**: 26 unit tests, 100% pass rate
+
+#### RouteAdjuster - Smart Path Correction
+- **feat**: Multi-directional deviation finding (left/right/above/below)
+- **feat**: Alternative route generation with waypoints
+- **feat**: Safety scoring based on terrain analysis
+- **feat**: Efficiency scoring (distance vs original path)
+- **feat**: Weighted scoring: safety 60% + efficiency 40%
+- **feat**: Max detour limits to prevent excessive deviation
+- **test**: 20 unit tests, 100% pass rate
+
+#### PredictivePathAnalyzerAdapter - Backward Compatibility
+- **feat**: Adapter for old API compatibility
+- **feat**: Wraps new components to match old interface
+- **feat**: Same methods: quickCheck(), checkSurroundings(), getStats()
+- **feat**: Zero breaking changes for AntiStuckV2 integration
+- **test**: 11 integration tests, 100% pass rate
+
+#### Testing Summary
+- **test**: 68/68 Phase 2 tests passing (100% success rate)
+- **test**: 134/134 total V2.0 tests passing
+- **test**: All 3 predictive components unit tested
+- **test**: Integration tests for full scan→predict→adjust flow
+- **test**: Adapter compatibility verified with AntiStuckV2 patterns
+
+#### Files Created
+- `navigation/TerrainScanner.js` - Core scanning engine
+- `navigation/HazardPredictor.js` - Prediction algorithms
+- `navigation/RouteAdjuster.js` - Route correction
+- `navigation/PredictivePathAnalyzerAdapter.js` - Compatibility layer
+- `tests/TerrainScanner.test.js` - 22 unit tests
+- `tests/HazardPredictor.test.js` - 26 unit tests
+- `tests/RouteAdjuster.test.js` - 20 unit tests
+- `tests/PredictiveLayer.integration.test.js` - 11 integration tests
+
+---
+
+## [2026-05-25] - Pathfinder V2.0 Phase 1 COMPLETE ✅
+
+### Pathfinder V2.0 Foundation (Bot v1.1.0)
+**Status:** PRODUCTION READY - SmartRecalculator + PathCache Active
+
+#### SmartRecalculator - Intelligent Throttling
+- **feat**: Intelligent recalculation throttling with configurable intervals (default: 500ms)
+- **feat**: Change classification system (goal_new, goal_near, goal_far, path_blocked)
+- **feat**: Throttle rate tracking and real-time statistics
+- **feat**: Pattern analysis for adaptive throttling behavior
+- **feat**: Integration with NavigationController via event bus
+- **perf**: Recalcs reduced from 30-50/min to 5-10/min (80% reduction)
+- **perf**: Throttle rate: 60-75% (optimal performance/smoothness balance)
+
+#### PathCache - Intelligent Caching
+- **feat**: LRU (Least Recently Used) cache implementation
+- **feat**: TTL-based expiration (5 minutes default)
+- **feat**: Spatial invalidation (radius-based cache clearing)
+- **feat**: Hit rate tracking and utilization statistics
+- **feat**: Configurable max size (50 entries default)
+
+#### NavigationController Integration
+- **feat**: Event-driven SmartRecalculator evaluation on every navigation
+- **feat**: Goal classification by distance and type
+- **feat**: Real-time logging: `[V2.0 SmartRecalc] Proceeding/Throttled`
+
+#### New Commands
+- **feat**: `!pfv2` command - Display Pathfinder V2.0 statistics (recalcs, throttled, rate)
+
+#### Configuration
+- **feat**: Environment variable `PF_V2_RECALC_MIN_INTERVAL` for throttling control
+- **feat**: Config section `pathfinderV2` in `config.js` with all tunables
+
+#### Testing
+- **test**: 55/55 tests passing (100% success rate)
+  - 20 SmartRecalculator unit tests
+  - 20 PathCache unit tests
+  - 15 PathfinderV2 integration tests
+- **test**: 30+ minutes real-world gameplay validation
+- **test**: AntiStuck V2.0 compatibility verified
+
+#### Bug Fixes
+- **fix**: `handleStuckRecovery` variable scope issue (`ctx` → `context`)
+- **fix**: `!pfv2` command pattern recognition (added 10 patterns with `!` prefix)
+- **fix**: SmartRecalculator default config values (500ms optimal)
+
+#### Documentation
+- **docs**: `PATHFINDER_V2_PHASE1_STATUS.md` - Complete phase 1 report
+- **docs**: `ROADMAP_SUMMARY.md` updated with Phase 1 completion
+
+---
+
+## [2026-05-24] - Launcher v3.0.24
+
+### Launcher v3.0.24
+
+#### Status Bar — Inline Launch Status
+- **feat**: Removed separate bot status panel — status is now inline in `launch-row` next to LAUNCH BOT button
+- **feat**: INV display replaced with ASCII segments (`▰▰▰▱▱▱▱▱▱▱▱▱`) — 12 blocks, each = 3 slots, turns red >75%, pulses >90%
+- **feat**: HP and FOOD values shown inline with color-coded HP (green/amber/red) and critical pulse animation
+- **feat**: STATE badge (`IDLE`/`GATHERING`/`COMBAT`/`FLEE`/`FOLLOWING`) on second row with cyberpunk glow animations per state
+- **feat**: Status bar hidden when bot is OFFLINE — no empty fields shown to user
+- **feat**: Boot sequence — bar appears 2s after bot process confirmed started (after main glitch flash settles)
+- **feat**: Appear animation — blur→brightness→clear fade-in (0.6s), mirrors shutdown animation
+- **feat**: Shutdown animation — brightness→blur→hidden fade-out (0.6s), synced with other stop animations
+- **feat**: Animated dots `·` → `··` → `···` (amber color) appear 1s after panel, persist until real telemetry arrives
+- **feat**: HP/FOOD fields have fixed `min-width` — layout does not shift during dots animation
+- **fix**: `btn-launch` gets `min-width: 180px` and `flex-shrink: 0` — status row doesn't shift on button text change
+
+#### Window
+- **feat**: Default window size increased to `1240×800` (was `1100×720`)
+- **feat**: `minWidth: 1240` / `minHeight: 800` — window cannot be resized below default
+- **feat**: Maximize/Restore button (`□`) added to titlebar — blue hover, calls `window-maximize` IPC
+- **fix**: All titlebar buttons (`─`, `□`, `✕`) now equal `28×28px` with flex-centered icons
+
+#### Titlebar
+- **feat**: `launcher.maximize()` added to preload IPC bridge
+- **feat**: `ipcMain.on('window-maximize')` — toggles maximize/restore in main process
+
+---
+
+## [2026-05-23] - Bot v1.0.15 / Launcher v3.0.23
+
+### Bot v1.0.15
+- **fix**: Wire `TacticalDecisionEngine` into `BotBrain` — was never initialized, causing all diagnostics panels (scores/combat/watchdog) to stay OFFLINE
+
+### Bot v1.0.14
+- **feat**: `AutoGearSystem` — auto-equips best available armor (helmet/chestplate/leggings/boots) on spawn and after respawn (1.2s delay)
+- **feat**: `RespawnRecoverySystem` — records death position, navigates back to drop after respawn (30s timeout, aborts on COMBAT/FLEE)
+- **feat**: `AntiDrownSystem` — monitors air supply every 2 ticks, auto-surfaces when air < 10 by holding jump
+- **feat**: Auto-enable `SurvivalSystem` (auto-eat) on every `brain.init()` — no longer requires explicit command
+- **feat**: `TacticalDecisionEngine` — added `combat` telemetry (mode, targetDist, weapon, status) every 2s and `watchdog` telemetry every 3s so all launcher diagnostics panels update in real time
+- **fix**: `TacticalDecisionEngine` — use `nearestThreatDistance` (correct field) instead of `nearestThreat.position` (non-existent)
+
+### Launcher v3.0.23
+- **feat**: Cyberpunk glitch banner animation on show (`bannerGlitchIn` — clip-path reveal, scaleY bounce, hue-rotate flash, 0.45s)
+- **feat**: Cyberpunk glitch banner animation on dismiss (`bannerGlitchOut` — X-split, scaleY collapse, brightness flash, 0.35s)
+- **feat**: Chromatic aberration `::after` overlay on banner edges (red/cyan)
+- **feat**: Animated progress bar — dark body with `cyberBarShift` gradient, gold spark `cyberSpark` sweeping left→right
+- **fix**: Remove duplicate `downloadFile` function — bot update now downloads reliably on first attempt
+
+### Launcher v3.0.22
+- **fix**: `installBotUpdateInline` — use `launcher.onUpdateProgress` instead of non-existent `launcher.on` — progress bar now updates correctly
+
+### Launcher v3.0.21
+- **fix**: Update banner — hide launcher row when only bot update is available
+- **fix**: Version string formatting — remove redundant `v` prefix
+- **fix**: Reset banner rows visibility on dismiss
+
+---
+
+## [2026-05-23] - v3.0.20 - NULLBIT Launcher: Premium UI Polish
+
+### NULLBIT Launcher v3.0.20
+
+#### Tuning Panel — Heat Gradient Sliders
+- **Heat color system** (`_tuningHeatUpdate`): slider fill, value text and glow change color based on value — cyan (1–3) → yellow (4–6) → orange (7–9) → red (10)
+- **OVERDRIVE / MINIMUM badge**: glitch-animated badge appears at slider extremes (value=1 or 10), positioned absolutely to avoid layout shift
+- **Smooth CSS transitions** on `.tuning-fill` and `.tuning-val` — no abrupt color jumps
+- **Preset heat fix**: `_setTuningSlider` now calls `_tuningHeatUpdate` so colors update when loading presets
+- **Inverted lerp mappings** for SURVIVAL, GATHER SAFETY, MOBILITY: low value = safe/cautious (left), high value = risky/aggressive (right)
+- **`_syncTuningFromAdvanced`** — reverse lerp fixed to match inverted ranges
+- **MOBILITY clamp**: `pathThinkTimeoutMs` max reduced 40000ms → 20000ms to prevent bot hangs
+
+#### Sidebar Logo — Boot Animation
+- **Offline state**: logo is dark (`opacity: 0.18`) when bot is stopped — "dead system" aesthetic
+- **Boot sequence**: on bot start — 900ms chromatic aberration glitch (red/cyan split, `scaleX` jitter, `steps(1)` hard frames) → 400ms white flash → stable `logoGlow` pulse
+- **Online state** (`logo-active`): persistent slow glow animation while bot is running
+- **Stop sequence** (`logo-offline`): 1.4s fade-out back to dark
+- **`_triggerLogoState(running)`**: new JS function wired into `setBotRunning`
+
+#### Diagnostics — Status Badge Colors
+- **STUCK**: red with 1s pulse animation (`diagStuckPulse`) — critical visual alert
+- **STANDBY**: cyan (`#00c8ff`) — ready but not active, distinct from IDLE yellow
+- **IDLE**: yellow (unchanged)
+- **ACTIVE / LIVE**: green (unchanged)
+- **OFFLINE**: grey (unchanged)
+
+#### Critical Events Counter
+- Counter `#diag-error-count` now grey at `data-count="0"`, turns red only when errors exist
+- `data-count` attribute set programmatically in `addGlitchLog()` for CSS targeting
+- Fixed CSS override that kept counter grey regardless of count
+
+#### Advanced Tab — Localization
+- All Russian `neural-hint` descriptions replaced with English equivalents (27 strings)
+- `.neural-hint` font: `9px opacity:0.6` → `10px color:var(--text) opacity:0.5` — readable on dark background
+
+#### Version
+- Launcher: `3.0.19` → `3.0.20`
+
+---
+
+## [2026-05-22] - v3.0.4 - Advanced Telemetry & Diagnostics
+
+### NULLBIT Launcher v3.0.4
+- **DIAGNOSTICS tab** — Neural Diagnostics panel with real-time telemetry
+  - Tactical Weights: threatScore, survivalScore, resourceScore (LIVE indicator)
+  - Combat Telemetry: mode, target distance, weapon, last action, status
+  - System Watchdog: last check, lock holder, path status
+  - Critical Events: glitch-log for errors with timestamps
+  - Expedition Telemetry: trees chopped, ores mined, fallbacks, danger stops
+  - User Override: shows when AI is blocked by user command
+- **Terminal dots logic** — real terminal behavior (only active process has dots)
+- **STOP BOT button** — correctly distinguishes manual stop from crash
+
+### Bot Core — JSON Telemetry Output
+- **CombatSystem** — emits JSON on engage, stop, flee, watchdog deadlock
+- **GlobalWatchdog** — emits JSON every 5s + immediate on deadlock
+- **TreeJob** — emits JSON on tree complete/fail with coordinates
+- **OreJob** — emits JSON on ore mined + tunnel fallback used
+- **TacticalDecisionEngine** — emits JSON scores every 2s (throttled)
+
+### All JSON payloads follow schema:
+```json
+{"type":"combat","mode":"PVP","targetDist":5.2,"weapon":"sword","lastAction":"engage:zombie","status":"ENGAGED"}
+{"type":"watchdog","lastCheck":"16:25:09","lockHolder":"TreeJob","pathStatus":"ok","status":"ACTIVE"}
+{"type":"resource","trees":12,"ores":3,"fallbacks":2,"dangerStops":1,"status":"GATHERING"}
+```
+
+---
+
 ## [2026-05-21 #8] - Survival v1.5 (Assisted Autonomy) + tactical spam fix
 
 ### `systems/SurvivalSystem.js` — v1 → v1.5
